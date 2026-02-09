@@ -40,10 +40,8 @@ async function build() {
   // Copy static assets
   mkdirSync(`${outdir}/assets`, { recursive: true });
 
-  const manifestSrc = target === 'firefox'
-    ? 'manifest.firefox.json'
-    : 'manifest.json';
-  cpSync(manifestSrc, `${outdir}/manifest.json`);
+  // Unified manifest for both Chrome and Firefox
+  cpSync('manifest.json', `${outdir}/manifest.json`);
   cpSync('src/popup/popup.html', `${outdir}/popup.html`);
   cpSync('src/popup/popup.css', `${outdir}/popup.css`);
   cpSync('src/content/content.css', `${outdir}/content.css`);
