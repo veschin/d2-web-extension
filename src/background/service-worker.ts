@@ -5,7 +5,7 @@ let currentTabMacros: MacroInfo[] = [];
 let currentPageMeta: PageMeta | null = null;
 
 /** Handle messages from content script and popup */
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message, sender) => {
   switch (message.type) {
     case 'macros-detected': {
       currentTabMacros = message.macros;
@@ -14,31 +14,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const count = message.macros.length;
       const tabId = sender.tab?.id;
       if (tabId) {
-        chrome.action.setBadgeText({ text: count > 0 ? String(count) : '', tabId });
-        chrome.action.setBadgeBackgroundColor({ color: '#4a90d9', tabId });
+        browser.action.setBadgeText({ text: count > 0 ? String(count) : '', tabId });
+        browser.action.setBadgeBackgroundColor({ color: '#4a90d9', tabId });
       }
-      break;
+      return;
     }
 
     case 'get-macros': {
-      sendResponse({ macros: currentTabMacros, pageMeta: currentPageMeta });
-      return true; // async response
+      return Promise.resolve({ macros: currentTabMacros, pageMeta: currentPageMeta });
     }
 
     case 'open-editor': {
       // Forward to content script of active tab
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      return browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
         if (tabs[0]?.id) {
-          chrome.tabs.sendMessage(tabs[0].id, message);
+          browser.tabs.sendMessage(tabs[0].id, message);
         }
       });
-      break;
     }
 
     case 'confluence-api': {
       // Proxy Confluence REST API calls
       const { method, url, body } = message;
-      fetch(url, {
+      return fetch(url, {
         method,
         credentials: 'same-origin',
         headers: body ? { 'Content-Type': 'application/json' } : undefined,
@@ -46,22 +44,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
         .then(async (res) => {
           const data = await res.text();
-          sendResponse({ type: 'confluence-api-result', status: res.status, data });
+          return { type: 'confluence-api-result', status: res.status, data };
         })
-        .catch((e) => {
-          sendResponse({
-            type: 'confluence-api-result',
-            status: 0,
-            data: (e as Error).message,
-          });
-        });
-      return true; // async response
+        .catch((e) => ({
+          type: 'confluence-api-result',
+          status: 0,
+          data: (e as Error).message,
+        }));
     }
   }
 });
 
 // Reset state when tab changes
-chrome.tabs.onActivated?.addListener(() => {
+browser.tabs.onActivated?.addListener(() => {
   currentTabMacros = [];
   currentPageMeta = null;
 });

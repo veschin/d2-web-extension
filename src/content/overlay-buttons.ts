@@ -19,7 +19,7 @@ function injectButtons() {
       e.stopPropagation();
       e.preventDefault();
       // Send message to open editor for this macro
-      chrome.runtime?.sendMessage?.({ type: 'open-editor', macroIndex: index });
+      browser.runtime?.sendMessage?.({ type: 'open-editor', macroIndex: index });
       // Also dispatch custom event for same-page listener
       window.dispatchEvent(
         new CustomEvent('d2ext-open-editor', { detail: { macroIndex: index } })

@@ -33,7 +33,7 @@ function renderMacros(macros: MacroInfo[], pageMeta: PageMeta | null) {
   listEl.querySelectorAll('.macro-item').forEach((item) => {
     item.addEventListener('click', () => {
       const index = parseInt(item.getAttribute('data-index') ?? '0', 10);
-      chrome.runtime.sendMessage({ type: 'open-editor', macroIndex: index });
+      browser.runtime.sendMessage({ type: 'open-editor', macroIndex: index });
       window.close();
     });
   });
@@ -44,7 +44,7 @@ function escapeHtml(s: string): string {
 }
 
 // Load macros from service worker
-chrome.runtime.sendMessage({ type: 'get-macros' }, (response) => {
+browser.runtime.sendMessage({ type: 'get-macros' }).then((response) => {
   if (response) {
     renderMacros(response.macros, response.pageMeta);
   } else {

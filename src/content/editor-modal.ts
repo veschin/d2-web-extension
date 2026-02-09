@@ -515,8 +515,8 @@ window.addEventListener('d2ext-open-editor', ((e: CustomEvent) => {
   openEditor(ext.macros[macroIndex], ext.pageMeta);
 }) as EventListener);
 
-// Also listen for chrome runtime messages (from popup)
-chrome.runtime?.onMessage?.addListener((message: any) => {
+// Also listen for browser runtime messages (from popup)
+browser.runtime?.onMessage?.addListener((message: any) => {
   if (message.type === 'open-editor') {
     const ext = (window as any).__d2ext;
     if (!ext?.macros?.[message.macroIndex] || !ext.pageMeta) return;

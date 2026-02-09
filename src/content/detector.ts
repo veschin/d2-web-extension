@@ -130,7 +130,7 @@ async function detect() {
 
   // Notify service worker
   try {
-    chrome.runtime?.sendMessage?.({
+    browser.runtime?.sendMessage?.({
       type: 'macros-detected',
       macros: detectedMacros,
       pageMeta,
