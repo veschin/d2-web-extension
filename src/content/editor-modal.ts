@@ -1,10 +1,11 @@
 import type { MacroInfo, PageMeta } from '../shared/types';
 import { renderSvg, formatD2 } from '../shared/d2-server';
 import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, savePage } from '../shared/confluence-api';
-import { loadMonaco, createEditor } from '../editor/monaco-setup';
+import { createEditor } from '../editor/editor-setup';
+import type { EditorView } from '@codemirror/view';
 
 let modalEl: HTMLElement | null = null;
-let monacoEditor: any = null;
+let editorView: EditorView | null = null;
 let currentMacro: MacroInfo | null = null;
 let originalCode = '';
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -17,6 +18,17 @@ const ICONS = {
   x: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
   loader: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>',
 };
+
+function getEditorCode(): string {
+  return editorView?.state.doc.toString() ?? '';
+}
+
+function setEditorCode(code: string) {
+  if (!editorView) return;
+  editorView.dispatch({
+    changes: { from: 0, to: editorView.state.doc.length, insert: code },
+  });
+}
 
 /** Open the editor modal for a specific macro */
 export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
@@ -73,25 +85,18 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
     if (e.target === modalEl) closeEditor();
   });
 
-  // Load Monaco and create editor
+  // Create CodeMirror editor
   setStatus('Loading editor...');
   try {
-    const monaco = await loadMonaco();
     const container = document.getElementById('d2ext-editor-container')!;
-    monacoEditor = createEditor(monaco, container, macro.code);
-
-    // Auto-preview on change (debounced)
-    monacoEditor.onDidChangeModelContent(() => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => doPreview(), 500);
+    editorView = await createEditor(container, macro.code, {
+      onSave: () => doSave(pageMeta),
+      onFormat: () => doFormat(),
+      onChange: () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => doPreview(), 500);
+      },
     });
-
-    // Keyboard shortcuts
-    monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => doSave(pageMeta));
-    monacoEditor.addCommand(
-      monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF,
-      () => doFormat()
-    );
 
     setStatus('Ready');
     // Initial preview
@@ -114,13 +119,13 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
 function closeEditor() {
   if (!modalEl) return;
 
-  const currentCode = monacoEditor?.getValue() ?? '';
+  const currentCode = getEditorCode();
   if (currentCode !== originalCode) {
     if (!confirm('You have unsaved changes. Close anyway?')) return;
   }
 
-  monacoEditor?.dispose();
-  monacoEditor = null;
+  editorView?.destroy();
+  editorView = null;
   modalEl.remove();
   modalEl = null;
   currentMacro = null;
@@ -128,9 +133,9 @@ function closeEditor() {
 
 /** Render preview via d2server */
 async function doPreview() {
-  if (!monacoEditor || !currentMacro) return;
+  if (!editorView || !currentMacro) return;
 
-  const code = monacoEditor.getValue();
+  const code = getEditorCode();
   const serverUrl = currentMacro.params.server;
   if (!serverUrl) {
     showError('No D2 server URL detected. Configure it in extension options.');
@@ -162,9 +167,9 @@ async function doPreview() {
 
 /** Format code via d2server */
 async function doFormat() {
-  if (!monacoEditor || !currentMacro) return;
+  if (!editorView || !currentMacro) return;
 
-  const code = monacoEditor.getValue();
+  const code = getEditorCode();
   const serverUrl = currentMacro.params.server;
   if (!serverUrl) return;
 
@@ -175,7 +180,7 @@ async function doFormat() {
     showError(error);
     setStatus('Format error');
   } else if (formatted) {
-    monacoEditor.setValue(formatted);
+    setEditorCode(formatted);
     hideError();
     setStatus('Formatted');
   }
@@ -183,9 +188,9 @@ async function doFormat() {
 
 /** Save the edited code back to Confluence */
 async function doSave(pageMeta: PageMeta) {
-  if (!monacoEditor || !currentMacro) return;
+  if (!editorView || !currentMacro) return;
 
-  const newCode = monacoEditor.getValue();
+  const newCode = getEditorCode();
   if (newCode === originalCode) {
     setStatus('No changes to save');
     return;

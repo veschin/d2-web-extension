@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { D2_LANGUAGE_ID, D2_MONARCH_TOKENIZER, D2_COMPLETION_ITEMS } from './d2-language';
+import {
+  D2_LANGUAGE_ID,
+  D2_KEYWORDS,
+  D2_SHAPES,
+  NODE_CLASS,
+  UNNAMED_CLASS,
+  d2Extensions,
+  fallbackLanguage,
+} from './d2-language';
 
 describe('D2_LANGUAGE_ID', () => {
   it('is "d2"', () => {
@@ -7,149 +15,108 @@ describe('D2_LANGUAGE_ID', () => {
   });
 });
 
-describe('D2_MONARCH_TOKENIZER', () => {
-  it('has expected top-level properties', () => {
-    expect(D2_MONARCH_TOKENIZER.defaultToken).toBe('');
-    expect(D2_MONARCH_TOKENIZER.tokenPostfix).toBe('.d2');
-  });
-
+describe('D2_KEYWORDS', () => {
   it('includes core D2 keywords', () => {
-    const kw = D2_MONARCH_TOKENIZER.keywords;
-    expect(kw).toContain('direction');
-    expect(kw).toContain('shape');
-    expect(kw).toContain('style');
-    expect(kw).toContain('label');
-    expect(kw).toContain('icon');
-    expect(kw).toContain('class');
-    expect(kw).toContain('classes');
-    expect(kw).toContain('constraint');
-    expect(kw).toContain('grid-columns');
-    expect(kw).toContain('grid-rows');
+    expect(D2_KEYWORDS.has('direction')).toBe(true);
+    expect(D2_KEYWORDS.has('shape')).toBe(true);
+    expect(D2_KEYWORDS.has('style')).toBe(true);
+    expect(D2_KEYWORDS.has('label')).toBe(true);
+    expect(D2_KEYWORDS.has('icon')).toBe(true);
+    expect(D2_KEYWORDS.has('class')).toBe(true);
+    expect(D2_KEYWORDS.has('classes')).toBe(true);
+    expect(D2_KEYWORDS.has('constraint')).toBe(true);
+    expect(D2_KEYWORDS.has('grid-columns')).toBe(true);
+    expect(D2_KEYWORDS.has('grid-rows')).toBe(true);
   });
 
   it('includes style keywords', () => {
-    const kw = D2_MONARCH_TOKENIZER.keywords;
-    expect(kw).toContain('fill');
-    expect(kw).toContain('stroke');
-    expect(kw).toContain('stroke-width');
-    expect(kw).toContain('opacity');
-    expect(kw).toContain('animated');
-    expect(kw).toContain('3d');
-    expect(kw).toContain('bold');
-    expect(kw).toContain('italic');
-  });
-
-  it('includes common D2 shapes', () => {
-    const shapes = D2_MONARCH_TOKENIZER.shapes;
-    expect(shapes).toContain('rectangle');
-    expect(shapes).toContain('cylinder');
-    expect(shapes).toContain('queue');
-    expect(shapes).toContain('diamond');
-    expect(shapes).toContain('cloud');
-    expect(shapes).toContain('sql_table');
-    expect(shapes).toContain('sequence_diagram');
-    expect(shapes).toContain('c4-person');
-  });
-
-  it('includes all 4 directions', () => {
-    expect(D2_MONARCH_TOKENIZER.directions).toEqual(['up', 'down', 'left', 'right']);
-  });
-
-  it('has root tokenizer rules', () => {
-    const root = D2_MONARCH_TOKENIZER.tokenizer.root;
-    expect(Array.isArray(root)).toBe(true);
-    expect(root.length).toBeGreaterThan(0);
-  });
-
-  it('has string_double and string_single states', () => {
-    expect(D2_MONARCH_TOKENIZER.tokenizer.string_double).toBeDefined();
-    expect(D2_MONARCH_TOKENIZER.tokenizer.string_single).toBeDefined();
-  });
-
-  it('comment rule matches # prefix', () => {
-    const commentRule = D2_MONARCH_TOKENIZER.tokenizer.root[0] as [RegExp, string];
-    expect(commentRule[0]).toBeInstanceOf(RegExp);
-    expect(commentRule[1]).toBe('comment');
-    expect(commentRule[0].test('# this is a comment')).toBe(true);
-  });
-
-  it('arrow rule matches D2 arrow operators', () => {
-    // Find the arrow rule
-    const arrowRule = (D2_MONARCH_TOKENIZER.tokenizer.root as any[]).find(
-      (r) => r[1] === 'keyword.operator' && r[0] instanceof RegExp && r[0].source.includes('->')
-    );
-    expect(arrowRule).toBeDefined();
-    const regex = arrowRule![0] as RegExp;
-    expect(regex.test('->')).toBe(true);
-    expect(regex.test('<-')).toBe(true);
-    expect(regex.test('<->')).toBe(true);
-    expect(regex.test('--')).toBe(true);
-    expect(regex.test('-->')).toBe(true);
-    expect(regex.test('<--')).toBe(true);
+    expect(D2_KEYWORDS.has('fill')).toBe(true);
+    expect(D2_KEYWORDS.has('stroke')).toBe(true);
+    expect(D2_KEYWORDS.has('stroke-width')).toBe(true);
+    expect(D2_KEYWORDS.has('opacity')).toBe(true);
+    expect(D2_KEYWORDS.has('animated')).toBe(true);
+    expect(D2_KEYWORDS.has('3d')).toBe(true);
+    expect(D2_KEYWORDS.has('bold')).toBe(true);
+    expect(D2_KEYWORDS.has('italic')).toBe(true);
   });
 });
 
-describe('D2_COMPLETION_ITEMS', () => {
-  it('is a non-empty array', () => {
-    expect(Array.isArray(D2_COMPLETION_ITEMS)).toBe(true);
-    expect(D2_COMPLETION_ITEMS.length).toBeGreaterThan(0);
+describe('D2_SHAPES', () => {
+  it('includes common D2 shapes', () => {
+    expect(D2_SHAPES.has('rectangle')).toBe(true);
+    expect(D2_SHAPES.has('cylinder')).toBe(true);
+    expect(D2_SHAPES.has('queue')).toBe(true);
+    expect(D2_SHAPES.has('diamond')).toBe(true);
+    expect(D2_SHAPES.has('cloud')).toBe(true);
+    expect(D2_SHAPES.has('sql_table')).toBe(true);
+    expect(D2_SHAPES.has('sequence_diagram')).toBe(true);
+    expect(D2_SHAPES.has('c4-person')).toBe(true);
+  });
+});
+
+describe('NODE_CLASS (tree-sitter mapping)', () => {
+  it('maps comment nodes to cmt', () => {
+    expect(NODE_CLASS.comment).toBe('cmt');
+    expect(NODE_CLASS.block_comment).toBe('cmt');
   });
 
-  it('every item has required fields', () => {
-    for (const item of D2_COMPLETION_ITEMS) {
-      expect(item).toHaveProperty('label');
-      expect(item).toHaveProperty('kind');
-      expect(item).toHaveProperty('insertText');
-      expect(item).toHaveProperty('detail');
-      expect(typeof item.label).toBe('string');
-      expect(typeof item.kind).toBe('number');
-    }
+  it('maps connection to kw (keyword)', () => {
+    expect(NODE_CLASS.connection).toBe('kw');
   });
 
-  it('includes keyword completions', () => {
-    const labels = D2_COMPLETION_ITEMS.map((i) => i.label);
-    expect(labels).toContain('direction');
-    expect(labels).toContain('shape');
-    expect(labels).toContain('style');
-    expect(labels).toContain('label');
+  it('maps identifier to var', () => {
+    expect(NODE_CLASS.identifier).toBe('var');
+    expect(NODE_CLASS.identifier_chain).toBe('var');
   });
 
-  it('includes shape completions', () => {
-    const labels = D2_COMPLETION_ITEMS.map((i) => i.label);
-    expect(labels).toContain('rectangle');
-    expect(labels).toContain('cylinder');
-    expect(labels).toContain('queue');
-    expect(labels).toContain('c4-person');
+  it('maps label to str (string)', () => {
+    expect(NODE_CLASS.label).toBe('str');
   });
 
-  it('includes direction completions', () => {
-    const labels = D2_COMPLETION_ITEMS.map((i) => i.label);
-    expect(labels).toContain('up');
-    expect(labels).toContain('down');
-    expect(labels).toContain('left');
-    expect(labels).toContain('right');
+  it('maps numeric types to num', () => {
+    expect(NODE_CLASS.integer).toBe('num');
+    expect(NODE_CLASS.float).toBe('num');
   });
 
-  it('includes style property completions', () => {
-    const labels = D2_COMPLETION_ITEMS.map((i) => i.label);
-    expect(labels).toContain('fill');
-    expect(labels).toContain('stroke');
-    expect(labels).toContain('opacity');
-    expect(labels).toContain('animated');
+  it('maps boolean to bool', () => {
+    expect(NODE_CLASS.boolean).toBe('bool');
   });
 
-  it('keyword items use kind 14 (Keyword)', () => {
-    const direction = D2_COMPLETION_ITEMS.find((i) => i.label === 'direction');
-    expect(direction?.kind).toBe(14);
+  it('maps glob types to op (operator)', () => {
+    expect(NODE_CLASS.glob).toBe('op');
+    expect(NODE_CLASS.global_glob).toBe('op');
+    expect(NODE_CLASS.recursive_glob).toBe('op');
+  });
+});
+
+describe('UNNAMED_CLASS', () => {
+  it('maps braces to brk', () => {
+    expect(UNNAMED_CLASS['{']).toBe('brk');
+    expect(UNNAMED_CLASS['}']).toBe('brk');
+    expect(UNNAMED_CLASS['[']).toBe('brk');
+    expect(UNNAMED_CLASS[']']).toBe('brk');
   });
 
-  it('shape items use kind 12 (Value)', () => {
-    const rect = D2_COMPLETION_ITEMS.find((i) => i.label === 'rectangle');
-    expect(rect?.kind).toBe(12);
+  it('maps punctuation', () => {
+    expect(UNNAMED_CLASS[':']).toBe('punc');
+    expect(UNNAMED_CLASS[';']).toBe('punc');
   });
 
-  it('style items append colon-space in insertText', () => {
-    const fill = D2_COMPLETION_ITEMS.find((i) => i.label === 'fill');
-    expect(fill?.insertText).toBe('fill: ');
+  it('maps boolean literals', () => {
+    expect(UNNAMED_CLASS['true']).toBe('bool');
+    expect(UNNAMED_CLASS['false']).toBe('bool');
+  });
+});
+
+describe('d2Extensions', () => {
+  it('returns fallback (array with 1 element) when no parser', () => {
+    const exts = d2Extensions();
+    expect(exts).toHaveLength(1);
+  });
+});
+
+describe('fallbackLanguage', () => {
+  it('is defined', () => {
+    expect(fallbackLanguage).toBeDefined();
   });
 });

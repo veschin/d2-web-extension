@@ -18,6 +18,7 @@ const buildOptions = {
   entryPoints,
   bundle: true,
   outdir,
+  platform: 'browser',
   format: 'esm',
   target: 'es2020',
   sourcemap: true,
@@ -25,6 +26,9 @@ const buildOptions = {
   define: {
     'process.env.BUILD_TARGET': JSON.stringify(target),
   },
+  // web-tree-sitter has Node.js-only code paths behind dynamic imports.
+  // Mark them as external so esbuild doesn't try to bundle them.
+  external: ['fs/promises', 'module'],
 };
 
 async function build() {
@@ -49,6 +53,17 @@ async function build() {
   // Copy icons if they exist
   try {
     cpSync('assets/icons', `${outdir}/assets/icons`, { recursive: true });
+  } catch {}
+
+  // Copy WASM files for tree-sitter
+  try {
+    cpSync('assets/tree-sitter.wasm', `${outdir}/assets/tree-sitter.wasm`);
+    cpSync('assets/tree-sitter-d2.wasm', `${outdir}/assets/tree-sitter-d2.wasm`);
+  } catch {}
+
+  // Copy web-tree-sitter runtime WASM from node_modules
+  try {
+    cpSync('node_modules/web-tree-sitter/web-tree-sitter.wasm', `${outdir}/assets/web-tree-sitter.wasm`);
   } catch {}
 
   console.log(`Built for ${target} → ${outdir}/`);

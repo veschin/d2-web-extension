@@ -1,131 +1,222 @@
-/** D2 language definition for Monaco Editor (Monarch tokenizer) */
+/**
+ * D2 language support for CodeMirror 6, backed by tree-sitter.
+ *
+ * Uses web-tree-sitter to parse D2 code with the ravsii/tree-sitter-d2 grammar
+ * and maps AST node types to CodeMirror highlight decorations.
+ */
+
+import { EditorView, Decoration, ViewPlugin, ViewUpdate, DecorationSet } from '@codemirror/view';
+import { StreamLanguage, StringStream } from '@codemirror/language';
+import type { Parser, Node as TSNode } from 'web-tree-sitter';
 
 export const D2_LANGUAGE_ID = 'd2';
 
-export const D2_MONARCH_TOKENIZER = {
-  defaultToken: '',
-  tokenPostfix: '.d2',
+// --- Tree-sitter node type → CSS class mapping ---
 
-  keywords: [
-    'direction', 'shape', 'style', 'label', 'icon', 'near', 'tooltip',
-    'link', 'class', 'classes', 'constraint', 'width', 'height',
-    'grid-columns', 'grid-rows', 'grid-gap', 'vertical-gap', 'horizontal-gap',
-    'top', 'left', 'font-size', 'font-color', 'fill', 'stroke', 'stroke-width',
-    'stroke-dash', 'border-radius', 'shadow', 'opacity', 'bold', 'italic',
-    'underline', 'text-transform', 'double-border', 'multiple', '3d',
-    'animated', 'filled', 'source-arrowhead', 'target-arrowhead',
-  ],
+const NODE_CLASS: Record<string, string> = {
+  comment: 'cmt',
+  block_comment: 'cmt',
+  connection: 'kw',
+  identifier: 'var',
+  identifier_chain: 'var',
+  label: 'str',
+  boolean: 'bool',
+  integer: 'num',
+  float: 'num',
+  escape: 'esc',
+  import: 'kw',
+  variable: 'var',
+  spread_variable: 'var',
+  glob: 'op',
+  global_glob: 'op',
+  recursive_glob: 'op',
+  visibility_mark: 'kw',
+  codeblock_language: 'kw',
+  codeblock_content: 'str',
+  argument_name: 'prop',
+  argument_type: 'typ',
+};
 
-  shapes: [
-    'rectangle', 'square', 'page', 'parallelogram', 'document', 'cylinder',
-    'queue', 'package', 'step', 'callout', 'stored_data', 'person', 'diamond',
-    'oval', 'circle', 'hexagon', 'cloud', 'text', 'code', 'class', 'sql_table',
-    'image', 'sequence_diagram', 'c4-person',
-  ],
+// Theme for the highlight classes
+export const d2HighlightTheme = EditorView.baseTheme({
+  '.d2-cmt': { color: '#6a737d' },
+  '.d2-kw': { color: '#d73a49' },
+  '.d2-var': { color: '#24292e' },
+  '.d2-str': { color: '#032f62' },
+  '.d2-num': { color: '#005cc5' },
+  '.d2-bool': { color: '#005cc5' },
+  '.d2-esc': { color: '#22863a' },
+  '.d2-op': { color: '#e36209' },
+  '.d2-prop': { color: '#6f42c1' },
+  '.d2-typ': { color: '#6f42c1' },
+  '.d2-brk': { color: '#24292e' },
+  '.d2-punc': { color: '#24292e' },
+});
 
-  directions: ['up', 'down', 'left', 'right'],
+// Pre-build Decoration marks for each class
+const MARKS: Record<string, Decoration> = {};
+for (const cls of new Set(Object.values(NODE_CLASS))) {
+  MARKS[cls] = Decoration.mark({ class: `d2-${cls}` });
+}
+MARKS['brk'] = Decoration.mark({ class: 'd2-brk' });
+MARKS['punc'] = Decoration.mark({ class: 'd2-punc' });
 
-  tokenizer: {
-    root: [
-      // Comments
-      [/#.*$/, 'comment'],
+// Unnamed token → class mapping
+const UNNAMED_CLASS: Record<string, string> = {
+  '{': 'brk', '}': 'brk', '[': 'brk', ']': 'brk',
+  ':': 'punc', ';': 'punc', ',': 'punc',
+  'true': 'bool', 'false': 'bool',
+};
 
-      // Strings
-      [/"([^"\\]|\\.)*$/, 'string.invalid'], // unterminated
-      [/"/, 'string', '@string_double'],
-      [/'([^'\\]|\\.)*$/, 'string.invalid'],
-      [/'/, 'string', '@string_single'],
+// --- Parser singleton ---
 
-      // Block strings (pipe)
-      [/\|[^|]*\|/, 'string'],
+let parserInstance: Parser | null = null;
+let parserPromise: Promise<Parser> | null = null;
 
-      // Arrows and connections
-      [/<->|-->|<--|->|<-|--/, 'keyword.operator'],
+/**
+ * Initialize the tree-sitter parser. Safe to call multiple times —
+ * returns the cached instance after first init.
+ */
+export async function initD2Parser(): Promise<Parser> {
+  if (parserInstance) return parserInstance;
+  if (parserPromise) return parserPromise;
 
-      // Semicolons
-      [/;/, 'delimiter'],
+  parserPromise = (async () => {
+    const { Parser: ParserClass, Language } = await import('web-tree-sitter');
+    await ParserClass.init({
+      locateFile: (file: string) => {
+        // In extension context, resolve via browser.runtime.getURL
+        if (typeof browser !== 'undefined' && browser.runtime?.getURL) {
+          return browser.runtime.getURL(`assets/${file}`);
+        }
+        // Fallback for dev/test
+        return `assets/${file}`;
+      },
+    });
+    const parser = new ParserClass();
+    const langUrl = typeof browser !== 'undefined' && browser.runtime?.getURL
+      ? browser.runtime.getURL('assets/tree-sitter-d2.wasm')
+      : 'assets/tree-sitter-d2.wasm';
+    const lang = await Language.load(langUrl);
+    parser.setLanguage(lang);
+    parserInstance = parser;
+    return parser;
+  })();
 
-      // Braces
-      [/[{}]/, 'delimiter.bracket'],
-      [/[[\]]/, 'delimiter.square'],
+  return parserPromise;
+}
 
-      // Colons
-      [/:/, 'delimiter'],
+// --- CodeMirror ViewPlugin for tree-sitter highlighting ---
 
-      // Numbers
-      [/\b\d+(\.\d+)?\b/, 'number'],
+function buildDecorations(view: EditorView, parser: Parser): DecorationSet {
+  const doc = view.state.doc.toString();
+  const tree = parser.parse(doc);
+  if (!tree) return Decoration.none;
+  const decorations: Array<{ from: number; to: number; deco: Decoration }> = [];
 
-      // Booleans
-      [/\b(true|false)\b/, 'keyword'],
+  function visit(node: TSNode) {
+    const cls = node.isNamed ? NODE_CLASS[node.type] : UNNAMED_CLASS[node.type];
+    if (cls && MARKS[cls]) {
+      const from = node.startIndex;
+      const to = node.endIndex;
+      if (from < to && to <= doc.length) {
+        decorations.push({ from, to, deco: MARKS[cls] });
+      }
+    }
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i);
+      if (child) visit(child);
+    }
+  }
 
-      // Keywords and identifiers
-      [
-        /[a-zA-Z_][\w-]*/,
-        {
-          cases: {
-            '@keywords': 'keyword',
-            '@shapes': 'type',
-            '@directions': 'constant',
-            '@default': 'identifier',
-          },
-        },
-      ],
+  visit(tree.rootNode);
 
-      // Wildcards
-      [/\*\*|\*/, 'keyword.operator'],
-    ],
+  // Sort by position (CodeMirror requires sorted decorations)
+  decorations.sort((a, b) => a.from - b.from || a.to - b.to);
 
-    string_double: [
-      [/[^\\"]+/, 'string'],
-      [/\\./, 'string.escape'],
-      [/"/, 'string', '@pop'],
-    ],
+  return Decoration.set(decorations.map((d) => d.deco.range(d.from, d.to)));
+}
 
-    string_single: [
-      [/[^\\']+/, 'string'],
-      [/\\./, 'string.escape'],
-      [/'/, 'string', '@pop'],
-    ],
+function treeSitterPlugin(parser: Parser) {
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+      constructor(view: EditorView) {
+        this.decorations = buildDecorations(view, parser);
+      }
+      update(update: ViewUpdate) {
+        if (update.docChanged || update.viewportChanged) {
+          this.decorations = buildDecorations(update.view, parser);
+        }
+      }
+    },
+    { decorations: (v) => v.decorations }
+  );
+}
+
+// --- Fallback StreamLanguage (regex-based, used if tree-sitter WASM unavailable) ---
+
+const D2_KEYWORDS = new Set([
+  'direction', 'shape', 'style', 'label', 'icon', 'near', 'tooltip',
+  'link', 'class', 'classes', 'constraint', 'width', 'height',
+  'grid-columns', 'grid-rows', 'grid-gap', 'vertical-gap', 'horizontal-gap',
+  'top', 'left', 'font-size', 'font-color', 'fill', 'stroke', 'stroke-width',
+  'stroke-dash', 'border-radius', 'shadow', 'opacity', 'bold', 'italic',
+  'underline', 'text-transform', 'double-border', 'multiple', '3d',
+  'animated', 'filled', 'source-arrowhead', 'target-arrowhead',
+]);
+
+const D2_SHAPES = new Set([
+  'rectangle', 'square', 'page', 'parallelogram', 'document', 'cylinder',
+  'queue', 'package', 'step', 'callout', 'stored_data', 'person', 'diamond',
+  'oval', 'circle', 'hexagon', 'cloud', 'text', 'code', 'sql_table',
+  'image', 'sequence_diagram', 'c4-person',
+]);
+
+const d2StreamDef = {
+  token(stream: StringStream): string | null {
+    // Comments
+    if (stream.match(/^#.*/)) return 'comment';
+    // Arrows
+    if (stream.match(/^(<->|-->|<--|->|<-|--)/)) return 'keyword';
+    // Strings
+    if (stream.match(/^"([^"\\]|\\.)*"/)) return 'string';
+    if (stream.match(/^'([^'\\]|\\.)*'/)) return 'string';
+    // Numbers
+    if (stream.match(/^\d+(\.\d+)?/)) return 'number';
+    // Booleans
+    if (stream.match(/^(true|false)\b/)) return 'atom';
+    // Braces/brackets/delimiters
+    if (stream.match(/^[{}[\]:;]/)) return 'punctuation';
+    // Identifiers / keywords
+    if (stream.match(/^[a-zA-Z_][\w-]*/)) {
+      const word = stream.current();
+      if (D2_KEYWORDS.has(word)) return 'keyword';
+      if (D2_SHAPES.has(word)) return 'typeName';
+      return 'variableName';
+    }
+    stream.next();
+    return null;
   },
 };
 
-export const D2_COMPLETION_ITEMS = [
-  // Keywords
-  { label: 'direction', kind: 14, insertText: 'direction: ', detail: 'Set diagram direction' },
-  { label: 'shape', kind: 14, insertText: 'shape: ', detail: 'Set node shape' },
-  { label: 'style', kind: 14, insertText: 'style: {\n  $0\n}', insertTextRules: 4, detail: 'Style block' },
-  { label: 'label', kind: 14, insertText: 'label: ', detail: 'Set label text' },
-  { label: 'icon', kind: 14, insertText: 'icon: ', detail: 'Set icon URL' },
-  { label: 'near', kind: 14, insertText: 'near: ', detail: 'Position label near edge' },
-  { label: 'tooltip', kind: 14, insertText: 'tooltip: ', detail: 'Set tooltip text' },
-  { label: 'link', kind: 14, insertText: 'link: ', detail: 'Set hyperlink' },
-  { label: 'class', kind: 14, insertText: 'class: ', detail: 'Apply class' },
-  { label: 'classes', kind: 14, insertText: 'classes: {\n  $0\n}', insertTextRules: 4, detail: 'Define classes' },
-  { label: 'constraint', kind: 14, insertText: 'constraint: ', detail: 'Set constraint' },
-  { label: 'width', kind: 14, insertText: 'width: ', detail: 'Set width' },
-  { label: 'height', kind: 14, insertText: 'height: ', detail: 'Set height' },
-  { label: 'grid-columns', kind: 14, insertText: 'grid-columns: ', detail: 'Grid columns count' },
-  { label: 'grid-rows', kind: 14, insertText: 'grid-rows: ', detail: 'Grid rows count' },
+const fallbackLanguage = StreamLanguage.define(d2StreamDef);
 
-  // Shapes
-  ...['rectangle', 'square', 'page', 'parallelogram', 'document', 'cylinder',
-    'queue', 'package', 'step', 'callout', 'stored_data', 'person', 'diamond',
-    'oval', 'circle', 'hexagon', 'cloud', 'text', 'code', 'sql_table',
-    'image', 'sequence_diagram', 'c4-person',
-  ].map((s) => ({
-    label: s, kind: 12, insertText: s, detail: `Shape: ${s}`,
-  })),
+// --- Public API ---
 
-  // Directions
-  ...['up', 'down', 'left', 'right'].map((d) => ({
-    label: d, kind: 21, insertText: d, detail: `Direction: ${d}`,
-  })),
+/**
+ * Get CodeMirror extensions for D2 tree-sitter highlighting.
+ * Returns [language, highlightPlugin, theme] if parser available,
+ * or [language] as fallback.
+ */
+export function d2Extensions(parser?: Parser) {
+  if (parser) {
+    return [fallbackLanguage, treeSitterPlugin(parser), d2HighlightTheme];
+  }
+  return [fallbackLanguage];
+}
 
-  // Style properties
-  ...['fill', 'stroke', 'stroke-width', 'stroke-dash', 'border-radius',
-    'shadow', 'opacity', 'font-size', 'font-color', 'bold', 'italic',
-    'underline', 'double-border', 'multiple', '3d', 'animated', 'filled',
-  ].map((p) => ({
-    label: p, kind: 10, insertText: `${p}: `, detail: `Style: ${p}`,
-  })),
-];
+/**
+ * For testing: expose internals
+ */
+export { D2_KEYWORDS, D2_SHAPES, NODE_CLASS, UNNAMED_CLASS, fallbackLanguage };
