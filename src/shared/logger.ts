@@ -33,7 +33,23 @@ function scheduleFlush() {
 async function flushToStorage() {
   try {
     if (typeof browser !== 'undefined' && browser.storage?.session) {
-      await browser.storage.session.set({ [STORAGE_KEY]: entries });
+      // Read existing entries from storage, merge with in-memory, write back.
+      // This prevents SW and content script from overwriting each other.
+      const result = await browser.storage.session.get(STORAGE_KEY);
+      const stored = (result[STORAGE_KEY] as LogEntry[]) ?? [];
+
+      const seen = new Set<string>();
+      const merged = [...stored, ...entries]
+        .sort((a, b) => a.ts - b.ts)
+        .filter((e) => {
+          const key = `${e.ts}-${e.source}-${e.message}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .slice(-MAX_ENTRIES);
+
+      await browser.storage.session.set({ [STORAGE_KEY]: merged });
     }
   } catch {
     // Storage unavailable (e.g. in tests or content script without permission)
@@ -108,16 +124,26 @@ export async function logTimed<T>(
 }
 
 /**
- * Get all log entries. Merges in-memory with storage if possible.
+ * Get all log entries. Merges in-memory with storage.
  */
 export async function getEntries(): Promise<LogEntry[]> {
   try {
     if (typeof browser !== 'undefined' && browser.storage?.session) {
       const result = await browser.storage.session.get(STORAGE_KEY);
-      const stored = result[STORAGE_KEY] as LogEntry[] | undefined;
-      if (stored && stored.length > entries.length) {
-        entries = stored;
-      }
+      const stored = (result[STORAGE_KEY] as LogEntry[]) ?? [];
+
+      // Merge stored + in-memory, deduplicate
+      const seen = new Set<string>();
+      const merged = [...stored, ...entries]
+        .sort((a, b) => a.ts - b.ts)
+        .filter((e) => {
+          const key = `${e.ts}-${e.source}-${e.message}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+      return merged.slice(-MAX_ENTRIES);
     }
   } catch {
     // Storage unavailable
