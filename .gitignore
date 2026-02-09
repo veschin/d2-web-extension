@@ -1,0 +1,13 @@
+node_modules/
+dist-chrome/
+dist-firefox/
+
+*.js.map
+*.tsbuildinfo
+
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
