@@ -6,13 +6,18 @@
 import { EditorView, keymap } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import { basicSetup } from 'codemirror';
+import { lintGutter } from '@codemirror/lint';
 import { d2Extensions, initD2Parser } from './d2-language';
+import { d2Linter } from './d2-linter';
 import type { Parser } from 'web-tree-sitter';
 
 export interface EditorCallbacks {
   onSave?: () => void;
   onFormat?: () => void;
   onChange?: (code: string) => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  getServerUrl?: () => string;
 }
 
 /**
@@ -34,13 +39,30 @@ export async function createEditor(
 
   const d2Exts = d2Extensions(parser);
 
+  const lintExts = callbacks.getServerUrl
+    ? [d2Linter({ getServerUrl: callbacks.getServerUrl }), lintGutter()]
+    : [];
+
+  // Firefox content scripts can't access adoptedStyleSheets through Xray wrappers.
+  // Hide it on our shadow root so style-mod (CodeMirror dep) falls back to <style> tags.
+  const root = container.getRootNode() as ShadowRoot | Document;
+  if (root !== document) {
+    Object.defineProperty(root, 'adoptedStyleSheets', {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+  }
+
   const view = new EditorView({
     parent: container,
+    root,
     state: EditorState.create({
       doc: initialValue,
       extensions: [
         basicSetup,
         ...d2Exts,
+        ...lintExts,
         keymap.of([
           {
             key: 'Mod-s',
@@ -53,6 +75,20 @@ export async function createEditor(
             key: 'Mod-Shift-f',
             run: () => {
               callbacks.onFormat?.();
+              return true;
+            },
+          },
+          {
+            key: 'Mod-=',
+            run: () => {
+              callbacks.onZoomIn?.();
+              return true;
+            },
+          },
+          {
+            key: 'Mod--',
+            run: () => {
+              callbacks.onZoomOut?.();
               return true;
             },
           },

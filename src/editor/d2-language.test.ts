@@ -109,9 +109,9 @@ describe('UNNAMED_CLASS', () => {
 });
 
 describe('d2Extensions', () => {
-  it('returns fallback (array with 1 element) when no parser', () => {
+  it('returns fallback + autocompletion + indent extensions when no parser', () => {
     const exts = d2Extensions();
-    expect(exts).toHaveLength(1);
+    expect(exts).toHaveLength(5);
   });
 });
 

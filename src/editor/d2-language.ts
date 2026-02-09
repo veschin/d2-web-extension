@@ -6,7 +6,8 @@
  */
 
 import { EditorView, Decoration, ViewPlugin, ViewUpdate, DecorationSet } from '@codemirror/view';
-import { StreamLanguage, StringStream } from '@codemirror/language';
+import { StreamLanguage, StringStream, indentUnit, indentOnInput, indentService } from '@codemirror/language';
+import { autocompletion, type CompletionContext, type Completion } from '@codemirror/autocomplete';
 import type { Parser, Node as TSNode } from 'web-tree-sitter';
 
 export const D2_LANGUAGE_ID = 'd2';
@@ -109,32 +110,37 @@ export async function initD2Parser(): Promise<Parser> {
 // --- CodeMirror ViewPlugin for tree-sitter highlighting ---
 
 function buildDecorations(view: EditorView, parser: Parser): DecorationSet {
-  const doc = view.state.doc.toString();
-  const tree = parser.parse(doc);
-  if (!tree) return Decoration.none;
-  const decorations: Array<{ from: number; to: number; deco: Decoration }> = [];
+  try {
+    const doc = view.state.doc.toString();
+    const tree = parser.parse(doc);
+    if (!tree) return Decoration.none;
+    const decorations: Array<{ from: number; to: number; deco: Decoration }> = [];
 
-  function visit(node: TSNode) {
-    const cls = node.isNamed ? NODE_CLASS[node.type] : UNNAMED_CLASS[node.type];
-    if (cls && MARKS[cls]) {
-      const from = node.startIndex;
-      const to = node.endIndex;
-      if (from < to && to <= doc.length) {
-        decorations.push({ from, to, deco: MARKS[cls] });
+    function visit(node: TSNode) {
+      const cls = node.isNamed ? NODE_CLASS[node.type] : UNNAMED_CLASS[node.type];
+      if (cls && MARKS[cls]) {
+        const from = node.startIndex;
+        const to = node.endIndex;
+        if (from < to && to <= doc.length) {
+          decorations.push({ from, to, deco: MARKS[cls] });
+        }
+      }
+      for (let i = 0; i < node.childCount; i++) {
+        const child = node.child(i);
+        if (child) visit(child);
       }
     }
-    for (let i = 0; i < node.childCount; i++) {
-      const child = node.child(i);
-      if (child) visit(child);
-    }
+
+    visit(tree.rootNode);
+
+    // Sort by position (CodeMirror requires sorted decorations)
+    decorations.sort((a, b) => a.from - b.from || a.to - b.to);
+
+    return Decoration.set(decorations.map((d) => d.deco.range(d.from, d.to)));
+  } catch {
+    // Tree-sitter parse failed — return empty decorations to avoid corruption
+    return Decoration.none;
   }
-
-  visit(tree.rootNode);
-
-  // Sort by position (CodeMirror requires sorted decorations)
-  decorations.sort((a, b) => a.from - b.from || a.to - b.to);
-
-  return Decoration.set(decorations.map((d) => d.deco.range(d.from, d.to)));
 }
 
 function treeSitterPlugin(parser: Parser) {
@@ -202,6 +208,62 @@ const d2StreamDef = {
 
 const fallbackLanguage = StreamLanguage.define(d2StreamDef);
 
+// --- Autocomplete ---
+
+const D2_DIRECTIONS = ['up', 'down', 'left', 'right'];
+
+const D2_STYLE_KEYWORDS = [
+  'opacity', 'fill', 'stroke', 'stroke-width', 'stroke-dash', 'border-radius',
+  'shadow', 'font-size', 'font-color', 'bold', 'italic', 'underline',
+  'text-transform', 'double-border', 'multiple', '3d', 'animated', 'filled',
+];
+
+const D2_ARROWS = ['->', '<-', '<->', '--', '-->', '<--'];
+
+function mkCompletions(items: string[], type: string, boost = 0): Completion[] {
+  return items.map((label) => ({ label, type, boost }));
+}
+
+const allCompletions: Completion[] = [
+  ...mkCompletions([...D2_KEYWORDS], 'keyword', 2),
+  ...mkCompletions([...D2_SHAPES], 'type', 1),
+  ...mkCompletions(D2_STYLE_KEYWORDS, 'property'),
+  ...mkCompletions(D2_DIRECTIONS, 'enum'),
+  ...mkCompletions(D2_ARROWS, 'operator'),
+  ...mkCompletions(['true', 'false'], 'constant'),
+];
+
+function d2Completions(context: CompletionContext) {
+  const word = context.matchBefore(/[\w-]+/);
+  if (!word && !context.explicit) return null;
+  return {
+    from: word?.from ?? context.pos,
+    options: allCompletions,
+    validFor: /^[\w-]*$/,
+  };
+}
+
+const d2Autocompletion = autocompletion({
+  override: [d2Completions],
+  activateOnTyping: true,
+});
+
+// --- Auto-indent service ---
+
+const d2IndentService = indentService.of((context, pos) => {
+  const line = context.state.doc.lineAt(pos);
+  let depth = 0;
+  for (let i = 1; i < line.number; i++) {
+    const prev = context.state.doc.line(i).text;
+    for (const ch of prev) {
+      if (ch === '{') depth++;
+      else if (ch === '}') depth--;
+    }
+  }
+  if (line.text.trim().startsWith('}')) depth = Math.max(0, depth - 1);
+  return depth * context.unit;
+});
+
 // --- Public API ---
 
 /**
@@ -210,10 +272,11 @@ const fallbackLanguage = StreamLanguage.define(d2StreamDef);
  * or [language] as fallback.
  */
 export function d2Extensions(parser?: Parser) {
+  const indent = [indentUnit.of('  '), d2IndentService, indentOnInput()];
   if (parser) {
-    return [fallbackLanguage, treeSitterPlugin(parser), d2HighlightTheme];
+    return [fallbackLanguage, treeSitterPlugin(parser), d2HighlightTheme, d2Autocompletion, ...indent];
   }
-  return [fallbackLanguage];
+  return [fallbackLanguage, d2Autocompletion, ...indent];
 }
 
 /**
