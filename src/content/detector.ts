@@ -121,12 +121,14 @@ async function detect() {
 
   // Map ALL DOM macros → storage macros by position to get macro-ids.
   // Includes empty macros so positional mapping stays correct.
+  // Prefer storage code over DOM code — DOM textContent may have
+  // double-encoded HTML entities (&quot; etc.) that differ from raw CDATA.
   const allMappedMacros = domMacros.map((dm, index) => {
     const storageMacro = storageMacros[index];
     const info: MacroInfo = {
       domIndex: index,
       macroId: storageMacro?.macroId ?? `unknown-${index}`,
-      code: dm.code,
+      code: storageMacro?.code ?? dm.code,
       params: dm.params,
       mode: mode as 'view' | 'edit',
     };
