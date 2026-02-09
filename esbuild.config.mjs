@@ -10,6 +10,7 @@ const entryPoints = [
   'src/content/detector.ts',
   'src/content/overlay-buttons.ts',
   'src/content/editor-modal.ts',
+  'src/content/status-bar.ts',
   'src/background/service-worker.ts',
   'src/popup/popup.ts',
 ];

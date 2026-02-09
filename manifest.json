@@ -18,7 +18,7 @@
   "content_scripts": [
     {
       "matches": ["*://*/*"],
-      "js": ["content/detector.js", "content/overlay-buttons.js", "content/editor-modal.js"],
+      "js": ["content/detector.js", "content/overlay-buttons.js", "content/editor-modal.js", "content/status-bar.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     }
