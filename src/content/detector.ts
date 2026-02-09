@@ -2,6 +2,8 @@ import type { MacroInfo, MacroParams, PageMeta } from '../shared/types';
 import { DEFAULT_PARAMS } from '../shared/types';
 import { readPageMeta, fetchPageStorage, parseStorageMacros } from '../shared/confluence-api';
 import { extractServerUrl } from '../shared/d2-server';
+import { logInfo, logWarn, logTimed } from '../shared/logger';
+import { setStatusBarText } from './status-bar';
 
 /** Detected macros on the current page */
 let detectedMacros: MacroInfo[] = [];
@@ -17,19 +19,19 @@ export function getPageMeta(): PageMeta | null {
 }
 
 /** Detect D2 macros in view mode */
-function detectViewModeMacros(): Array<{ element: Element; code: string; params: MacroParams }> {
-  const macros: Array<{ element: Element; code: string; params: MacroParams }> = [];
+function detectViewModeMacros(): Array<{ element: Element; code: string; params: MacroParams; cachedSvg?: string }> {
+  const macros: Array<{ element: Element; code: string; params: MacroParams; cachedSvg?: string }> = [];
   const elements = document.querySelectorAll('div.d2-macro');
 
   elements.forEach((el) => {
     const codeDiv = el.querySelector('.d2-code');
-    if (!codeDiv) return;
-
-    // Decode HTML entities in the code
-    const code = (codeDiv.textContent ?? '')
-      .replace(/&gt;/g, '>')
-      .replace(/&lt;/g, '<')
-      .replace(/&amp;/g, '&');
+    // Don't skip macros without code — include with empty string to keep index alignment with storage
+    const code = codeDiv
+      ? (codeDiv.textContent ?? '')
+          .replace(/&gt;/g, '>')
+          .replace(/&lt;/g, '<')
+          .replace(/&amp;/g, '&')
+      : '';
 
     const serverUrl = extractServerUrl(el);
 
@@ -49,7 +51,12 @@ function detectViewModeMacros(): Array<{ element: Element; code: string; params:
       params.scale = extract('Scale') || params.scale;
     }
 
-    macros.push({ element: el, code, params });
+    // Extract cached SVG from the diagram container
+    const diagramDiv = el.querySelector('.d2-diagram');
+    const svgEl = diagramDiv?.querySelector('svg');
+    const cachedSvg = svgEl ? svgEl.outerHTML : undefined;
+
+    macros.push({ element: el, code, params, cachedSvg });
   });
 
   return macros;
@@ -62,12 +69,13 @@ function detectEditModeMacros(): Array<{ element: Element; code: string; params:
 
   tables.forEach((table) => {
     const pre = table.querySelector('td.wysiwyg-macro-body pre');
-    if (!pre) return;
-
-    const code = (pre.textContent ?? '')
-      .replace(/&gt;/g, '>')
-      .replace(/&lt;/g, '<')
-      .replace(/&amp;/g, '&');
+    // Don't skip macros without code — include with empty string to keep index alignment with storage
+    const code = pre
+      ? (pre.textContent ?? '')
+          .replace(/&gt;/g, '>')
+          .replace(/&lt;/g, '<')
+          .replace(/&amp;/g, '&')
+      : '';
 
     const paramsStr = table.getAttribute('data-macro-parameters') ?? '';
     const params: MacroParams = { ...DEFAULT_PARAMS };
@@ -103,25 +111,38 @@ async function detect() {
   // Fetch storage format to get persistent macro-ids
   let storageMacros: Array<{ macroId: string; code: string }> = [];
   try {
-    const { storageValue } = await fetchPageStorage(pageMeta.pageId);
+    const { storageValue } = await logTimed('detector', 'Fetch page storage', () =>
+      fetchPageStorage(pageMeta!.pageId)
+    );
     storageMacros = parseStorageMacros(storageValue);
   } catch (e) {
-    console.warn('[d2ext] Failed to fetch storage format:', e);
+    logWarn('detector', 'Failed to fetch storage format', { error: (e as Error).message });
   }
 
-  // Map DOM macros → storage macros by position to get macro-ids
-  detectedMacros = domMacros.map((dm, index) => {
+  // Map ALL DOM macros → storage macros by position to get macro-ids.
+  // Includes empty macros so positional mapping stays correct.
+  const allMappedMacros = domMacros.map((dm, index) => {
     const storageMacro = storageMacros[index];
-    return {
+    const info: MacroInfo = {
       domIndex: index,
       macroId: storageMacro?.macroId ?? `unknown-${index}`,
       code: dm.code,
       params: dm.params,
       mode: mode as 'view' | 'edit',
     };
+    const cached = (dm as any).cachedSvg;
+    if (typeof cached === 'string' && cached) {
+      info.cachedSvg = cached;
+    }
+    return info;
   });
 
-  // Store element references for overlay buttons (on window for access by other scripts)
+  // Filter out macros with empty code for the public list,
+  // but keep all elements for correct domIndex lookups.
+  detectedMacros = allMappedMacros.filter(m => m.code.trim() !== '');
+
+  // Store element references for overlay buttons (on window for access by other scripts).
+  // `elements` includes ALL macros (even empty) so domIndex lookups work correctly.
   (window as any).__d2ext = {
     macros: detectedMacros,
     elements: domMacros.map((m) => m.element),
@@ -137,7 +158,8 @@ async function detect() {
     });
   } catch {}
 
-  console.log(`[d2ext] Detected ${detectedMacros.length} D2 macros (${mode} mode)`);
+  logInfo('detector', `Detected ${detectedMacros.length} D2 macros (${mode} mode)`);
+  setStatusBarText(`${detectedMacros.length} macro${detectedMacros.length > 1 ? 's' : ''} detected`, 'ok');
 }
 
 // Run detection when DOM is ready
