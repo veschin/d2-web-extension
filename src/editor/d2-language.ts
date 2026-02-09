@@ -233,6 +233,15 @@ const allCompletions: Completion[] = [
   ...mkCompletions(['true', 'false'], 'constant'),
 ];
 
+/** All built-in words to exclude from document-word completions */
+const BUILTIN_WORDS = new Set([
+  ...D2_KEYWORDS,
+  ...D2_SHAPES,
+  ...D2_STYLE_KEYWORDS,
+  ...D2_DIRECTIONS,
+  'true', 'false',
+]);
+
 /** Extract unique identifiers (node names, aliases) from the document text */
 function extractDocWords(doc: string, currentWord: string): Completion[] {
   const seen = new Set<string>();
@@ -241,9 +250,9 @@ function extractDocWords(doc: string, currentWord: string): Completion[] {
   let m;
   while ((m = wordRegex.exec(doc)) !== null) {
     const w = m[0];
-    // Skip the word currently being typed, and skip known keywords/shapes
+    // Skip the word currently being typed, and skip all built-in completions
     if (w === currentWord) continue;
-    if (D2_KEYWORDS.has(w) || D2_SHAPES.has(w)) continue;
+    if (BUILTIN_WORDS.has(w)) continue;
     seen.add(w);
   }
   return Array.from(seen).map((label) => ({ label, type: 'variable', boost: -1 }));

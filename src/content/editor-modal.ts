@@ -735,7 +735,8 @@ function refreshDiagramOnPage(newCode: string) {
 
   const codeDiv = element.querySelector('.d2-code');
   if (codeDiv) {
-    codeDiv.textContent = newCode.replace(/>/g, '&gt;').replace(/</g, '&lt;').replace(/&/g, '&amp;');
+    // textContent automatically escapes HTML — no manual entity encoding needed
+    codeDiv.textContent = newCode;
   }
 
   const diagramDiv = element.querySelector('.d2-diagram');
