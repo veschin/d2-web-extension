@@ -11,3 +11,6 @@ dist-firefox/
 *.swp
 *.swo
 *~
+
+# Confluence page examples (contain real instance data)
+conf-*.html
