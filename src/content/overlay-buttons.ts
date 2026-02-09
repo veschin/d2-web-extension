@@ -1,4 +1,5 @@
 /** Inject edit pencil buttons near each detected D2 macro */
+import { logInfo } from '../shared/logger';
 
 function injectButtons() {
   const ext = (window as any).__d2ext;
@@ -18,9 +19,7 @@ function injectButtons() {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      // Send message to open editor for this macro
-      browser.runtime?.sendMessage?.({ type: 'open-editor', macroIndex: index });
-      // Also dispatch custom event for same-page listener
+      // Dispatch custom event — editor-modal listens for this on the same page
       window.dispatchEvent(
         new CustomEvent('d2ext-open-editor', { detail: { macroIndex: index } })
       );
@@ -37,6 +36,8 @@ function injectButtons() {
       wrapper.appendChild(btn);
     }
   });
+
+  logInfo('detector', `Injected ${ext.elements.length} edit buttons`);
 }
 
 // Wait for detector to finish, then inject
