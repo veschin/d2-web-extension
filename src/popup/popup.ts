@@ -1,9 +1,27 @@
 import type { MacroInfo, PageMeta } from '../shared/types';
+import { loadEditorPrefs, saveEditorPrefs } from '../shared/editor-prefs';
+import { logInfo, logWarn } from '../shared/logger';
 
+// --- DOM refs ---
 const statusEl = document.getElementById('status')!;
 const listEl = document.getElementById('macro-list')!;
+const tabMacros = document.getElementById('tab-macros')!;
+const tabSettings = document.getElementById('tab-settings')!;
 
-function renderMacros(macros: MacroInfo[], pageMeta: PageMeta | null) {
+// --- Tabs ---
+document.querySelectorAll('.tab').forEach((tab) => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.getAttribute('data-tab');
+    tabMacros.style.display = target === 'macros' ? '' : 'none';
+    tabSettings.style.display = target === 'settings' ? '' : 'none';
+    if (target === 'settings') initSettings();
+  });
+});
+
+// --- Macros tab ---
+function renderMacros(macros: MacroInfo[], _pageMeta: PageMeta | null) {
   if (!macros || macros.length === 0) {
     statusEl.className = 'status empty';
     statusEl.textContent = 'No D2 macros found on this page';
@@ -16,14 +34,20 @@ function renderMacros(macros: MacroInfo[], pageMeta: PageMeta | null) {
 
   listEl.innerHTML = macros
     .map((m, i) => {
-      const firstLine = m.code.split('\n')[0].substring(0, 50);
+      const firstLine = m.code.split('\n')[0].substring(0, 40);
       return `
       <div class="macro-item" data-index="${i}">
-        <span class="macro-index">${i + 1}</span>
-        <span class="macro-code">${escapeHtml(firstLine)}</span>
-        <span class="macro-params">
-          <span class="param-badge">${m.params.layout}</span>
-        </span>
+        <div class="macro-item-header">
+          <span class="macro-index">${i + 1}</span>
+          <div class="macro-info">
+            <div class="macro-code">${escapeHtml(firstLine)}</div>
+            <div class="macro-params">
+              <span class="param-badge">${escapeHtml(m.params.layout)}</span>
+              <span class="param-badge">theme ${escapeHtml(m.params.theme)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="macro-thumb" id="thumb-${i}"><div class="thumb-spinner"></div></div>
       </div>
     `;
     })
@@ -37,17 +61,87 @@ function renderMacros(macros: MacroInfo[], pageMeta: PageMeta | null) {
       window.close();
     });
   });
+
+  // Load SVG thumbnails async
+  macros.forEach((m, i) => loadThumbnail(m, i));
+}
+
+async function loadThumbnail(macro: MacroInfo, index: number) {
+  const thumbEl = document.getElementById(`thumb-${index}`);
+  if (!thumbEl) return;
+
+  // Use cached SVG from the page if available
+  if (macro.cachedSvg) {
+    thumbEl.innerHTML = macro.cachedSvg;
+    return;
+  }
+
+  if (!macro.params.server) {
+    thumbEl.innerHTML = '<span style="font-size:10px;color:#aaa">N/A</span>';
+    return;
+  }
+
+  try {
+    const body = new URLSearchParams();
+    body.append('d2', macro.code);
+    if (macro.params.theme) body.append('theme', macro.params.theme);
+    if (macro.params.layout) body.append('layout', macro.params.layout);
+
+    const result = await browser.runtime.sendMessage({
+      type: 'proxy-fetch',
+      url: `${macro.params.server}/svg`,
+      method: 'POST',
+      body: body.toString(),
+      contentType: 'application/x-www-form-urlencoded',
+    });
+
+    if (result?.status < 400 && result?.data) {
+      thumbEl.innerHTML = result.data;
+    } else {
+      thumbEl.innerHTML = '<span style="font-size:10px;color:#c62828">err</span>';
+    }
+  } catch {
+    thumbEl.innerHTML = '<span style="font-size:10px;color:#aaa">N/A</span>';
+  }
 }
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Load macros from service worker
+// --- Settings tab ---
+let settingsInitialized = false;
+
+async function initSettings() {
+  if (settingsInitialized) return;
+  settingsInitialized = true;
+
+  const prefs = await loadEditorPrefs();
+  const fontInput = document.getElementById('editor-font-size') as HTMLInputElement;
+  if (fontInput) fontInput.value = String(prefs.fontSize);
+
+  document.getElementById('save-editor-prefs')?.addEventListener('click', async () => {
+    const fontSize = parseInt(fontInput?.value ?? '13', 10);
+    await saveEditorPrefs({ fontSize: Math.max(8, Math.min(28, fontSize)) });
+    showInlineStatus('editor-status', 'Saved!');
+  });
+}
+
+function showInlineStatus(id: string, text: string) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.textContent = text;
+    setTimeout(() => (el.textContent = ''), 2000);
+  }
+}
+
+// --- Init: load macros ---
 browser.runtime.sendMessage({ type: 'get-macros' }).then((response) => {
   if (response) {
+    logInfo('system', `Popup: retrieved ${response.macros?.length ?? 0} macros`);
     renderMacros(response.macros, response.pageMeta);
   } else {
+    logWarn('system', 'Popup: no response from service worker');
     statusEl.className = 'status empty';
     statusEl.textContent = 'Navigate to a Confluence page first';
   }

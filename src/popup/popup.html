@@ -8,9 +8,30 @@
   <div class="popup">
     <div class="header">
       <h1>D2 Editor</h1>
+      <div class="tab-bar">
+        <button class="tab active" data-tab="macros">Macros</button>
+        <button class="tab" data-tab="settings">Settings</button>
+      </div>
     </div>
-    <div id="status" class="status"></div>
-    <div id="macro-list" class="macro-list"></div>
+
+    <!-- Macros tab -->
+    <div class="tab-content" id="tab-macros">
+      <div id="status" class="status"></div>
+      <div id="macro-list" class="macro-list"></div>
+    </div>
+
+    <!-- Settings tab -->
+    <div class="tab-content" id="tab-settings" style="display:none">
+      <section class="settings-section">
+        <h2>Editor</h2>
+        <label class="setting-row">
+          <span>Font Size</span>
+          <input type="number" id="editor-font-size" min="8" max="28" value="13" class="setting-input" />
+        </label>
+        <button id="save-editor-prefs" class="btn btn-primary btn-sm">Save</button>
+        <span id="editor-status" class="inline-status"></span>
+      </section>
+    </div>
   </div>
   <script src="popup/popup.js" type="module"></script>
 </body>
