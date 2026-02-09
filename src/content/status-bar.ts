@@ -389,5 +389,25 @@ const STATUSBAR_CSS = `
   .d2ext-dp-status-err { color: #ef4444; font-weight: 600; }
 `;
 
+/** Remove status bar (when navigating to edit page via SPA) */
+function destroy() {
+  if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
+  panelVisible = false;
+  if (hostEl) {
+    hostEl.remove();
+    hostEl = null;
+    shadow = null;
+  }
+}
+
 // Auto-init when content script loads
 init();
+
+// Watch for SPA transitions to edit mode — remove status bar if edit markers appear
+const sbObserver = new MutationObserver(() => {
+  if (hostEl && (document.getElementById('editpageform') || document.querySelector('.wiki-edit'))) {
+    destroy();
+    sbObserver.disconnect();
+  }
+});
+sbObserver.observe(document.body, { childList: true, subtree: true });
