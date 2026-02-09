@@ -7,19 +7,26 @@
     "build": "node esbuild.config.mjs",
     "build:chrome": "BUILD_TARGET=chrome node esbuild.config.mjs",
     "build:firefox": "BUILD_TARGET=firefox node esbuild.config.mjs",
+    "dev:chrome": "BUILD_TARGET=chrome WATCH=1 node esbuild.config.mjs",
+    "dev:firefox": "concurrently \"BUILD_TARGET=firefox WATCH=1 node esbuild.config.mjs\" \"web-ext run -s dist-firefox --config web-ext-config.mjs\"",
+    "package:chrome": "BUILD_TARGET=chrome node esbuild.config.mjs && cd dist-chrome && zip -r ../d2ext-chrome.zip .",
+    "package:firefox": "BUILD_TARGET=firefox node esbuild.config.mjs && web-ext build -s dist-firefox -a .",
+    "lint:firefox": "web-ext lint -s dist-firefox",
     "watch": "BUILD_TARGET=chrome WATCH=1 node esbuild.config.mjs",
-    "clean": "rm -rf dist-chrome dist-firefox",
+    "clean": "rm -rf dist-chrome dist-firefox d2ext-chrome.zip",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.36",
+    "concurrently": "^9.2.1",
     "esbuild": "^0.27.3",
     "jsdom": "^28.0.0",
     "tree-sitter-cli": "^0.26.5",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "web-ext": "^9.2.0"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.2",

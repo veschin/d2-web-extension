@@ -18,7 +18,7 @@
   "content_scripts": [
     {
       "matches": ["*://*/*"],
-      "js": ["content/detector.js", "content/overlay-buttons.js", "content/editor-modal.js", "content/status-bar.js"],
+      "js": ["content/main.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     }
@@ -26,6 +26,10 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "D2 Editor"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
   },
   "icons": {
     "16": "assets/icons/icon16.png",
@@ -43,7 +47,10 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "d2-ui-extension@veschindev.gmail.com"
+      "id": "d2editor@veschin",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
     }
   }
 }
