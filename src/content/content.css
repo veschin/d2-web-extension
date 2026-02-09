@@ -1,0 +1,27 @@
+.d2ext-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #555;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s, color 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.d2-macro:hover .d2ext-edit-btn,
+.wysiwyg-macro:hover .d2ext-edit-btn {
+  opacity: 1;
+}
+
+.d2ext-edit-btn:hover {
+  background: #4a90d9;
+  color: white;
+  border-color: #4a90d9;
+}
