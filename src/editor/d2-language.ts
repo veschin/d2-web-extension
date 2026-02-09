@@ -233,12 +233,30 @@ const allCompletions: Completion[] = [
   ...mkCompletions(['true', 'false'], 'constant'),
 ];
 
+/** Extract unique identifiers (node names, aliases) from the document text */
+function extractDocWords(doc: string, currentWord: string): Completion[] {
+  const seen = new Set<string>();
+  // Match word-like tokens (2+ chars, including hyphens/underscores)
+  const wordRegex = /[a-zA-Z_][a-zA-Z0-9_-]{1,}/g;
+  let m;
+  while ((m = wordRegex.exec(doc)) !== null) {
+    const w = m[0];
+    // Skip the word currently being typed, and skip known keywords/shapes
+    if (w === currentWord) continue;
+    if (D2_KEYWORDS.has(w) || D2_SHAPES.has(w)) continue;
+    seen.add(w);
+  }
+  return Array.from(seen).map((label) => ({ label, type: 'variable', boost: -1 }));
+}
+
 function d2Completions(context: CompletionContext) {
   const word = context.matchBefore(/[\w-]+/);
   if (!word && !context.explicit) return null;
+  const currentWord = word?.text ?? '';
+  const docWords = extractDocWords(context.state.doc.toString(), currentWord);
   return {
     from: word?.from ?? context.pos,
-    options: allCompletions,
+    options: [...allCompletions, ...docWords],
     validFor: /^[\w-]*$/,
   };
 }
