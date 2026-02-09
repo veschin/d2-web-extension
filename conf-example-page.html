@@ -1,0 +1,1999 @@
+<div id="action-messages"></div>
+<script type="text/x-template" title="searchResultsGrid">
+  <table class="aui">      <thead>          <tr class="header">              <th class="search-result-title">Page Title</th>              <th class="search-result-space">Space</th>              <th class="search-result-date">Updated</th>          </tr>      </thead>  </table>
+</script>
+<script type="text/x-template" title="searchResultsGridCount">
+  <p class="search-result-count">{0}</p>
+</script>
+<script type="text/x-template" title="searchResultsGridRow">
+  <tr class="search-result">      <td class="search-result-title"><a href="{1}" class="content-type-{2}"><span>{0}</span></a></td>      <td class="search-result-space"><a class="space" href="/display/{4}/" title="{3}">{3}</a></td>      <td class="search-result-date"><span class="date" title="{6}">{5}</span></td>  </tr>
+</script>
+<div class="page-metadata">
+  <ul>
+    <li class="page-metadata-modification-info">
+      Created by
+      <span class="author">
+        <a
+          href="    /display/~oveshchin"
+          aria-label="created by Вещин Олег Олегович"
+          class="url fn confluence-userlink userlink-0"
+          data-username="oveshchin"
+          title=""
+          data-user-hover-bound="true"
+          >Вещин Олег Олегович</a
+        ></span
+      >
+      <a
+        class="last-modified"
+        aria-label="modified 6 minutes ago, select to show changes"
+        title="Show changes"
+        href="/pages/viewpreviousversions.action?pageId=462329155"
+        >6 minutes ago</a
+      >
+    </li>
+    <li class="page-metadata-modification-info">
+      <a
+        style="cursor: pointer; color: unset"
+        class="last-modified"
+        id="page-view-link"
+        original-title="Show Page Views"
+        title="Show Page Views"
+        ><img
+          style="height: 13px; margin-bottom: -2px"
+          src="/download/resources/net.kentcom.page-view-tracker/images/PageViewTracker_50x50.png"
+        />6 views since 9 Feb 2026</a
+      >
+    </li>
+  </ul>
+</div>
+<div id="main-content" class="wiki-content">
+  <h2
+    class="auto-cursor-target"
+    talk-marker="0"
+    talk-page-id="462329155"
+    talk-page-version="1"
+    id="id-тестоваястраничкаd2-Заголовок"
+  >
+    <span
+      class="handy-header aui-icon aui-icon-small aui-iconfont-link"
+      title="Copy link"
+    ></span
+    >Заголовок
+  </h2>
+  <p>
+    <span
+      class="conf-macro output-inline"
+      data-hasbody="true"
+      data-macro-name="d2"
+    >
+    </span>
+  </p>
+  <div class="d2-macro">
+    <div class="d2-code" style="display: none">a -&amp;gt; b</div>
+    <div
+      class="d2-diagram"
+      style="text-align: center; padding: 10px; display: block"
+    >
+      <div
+        id="svg-container-d2-ffxkcdw0f"
+        style="
+          overflow: hidden;
+          max-width: 100%;
+          cursor: grab;
+          user-select: none;
+          border: 1px solid rgb(224, 224, 224);
+          border-radius: 4px;
+          box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px;
+        "
+      >
+        <!--?xml version="1.0" encoding="utf-8"?--><svg
+          xmlns="http://www.w3.org/2000/svg"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
+          data-d2-version="v0.7.1"
+          preserveAspectRatio="xMinYMin meet"
+          viewBox="0 0 255 404"
+          width="204"
+          height="324"
+          style="
+            transform-origin: left top 0px;
+            transform: scale(1) translate(0px);
+          "
+        >
+          <svg
+            class="d2-2941388990 d2-svg"
+            width="255"
+            height="404"
+            viewBox="-89 -89 255 404"
+          >
+            <rect
+              x="-89.000000"
+              y="-89.000000"
+              width="255.000000"
+              height="404.000000"
+              rx="0.000000"
+              fill="#FFFFFF"
+              class="fill-N7"
+              stroke-width="0"
+            ></rect>
+            <style type="text/css">
+              .d2-2941388990 .text-bold {
+                font-family: "d2-2941388990-font-bold";
+              }
+              @font-face {
+                font-family: d2-2941388990-font-bold;
+                src: url("data:application/font-woff;base64,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");
+              }
+            </style>
+            <style type="text/css">
+              .shape {
+                shape-rendering: geometricPrecision;
+                stroke-linejoin: round;
+              }
+              .connection {
+                stroke-linecap: round;
+                stroke-linejoin: round;
+              }
+              .blend {
+                mix-blend-mode: multiply;
+                opacity: 0.5;
+              }
+              .d2-2941388990 .fill-N1 {
+                fill: #0a0f25;
+              }
+              .d2-2941388990 .fill-N2 {
+                fill: #676c7e;
+              }
+              .d2-2941388990 .fill-N3 {
+                fill: #9499ab;
+              }
+              .d2-2941388990 .fill-N4 {
+                fill: #cfd2dd;
+              }
+              .d2-2941388990 .fill-N5 {
+                fill: #dee1eb;
+              }
+              .d2-2941388990 .fill-N6 {
+                fill: #eef1f8;
+              }
+              .d2-2941388990 .fill-N7 {
+                fill: #ffffff;
+              }
+              .d2-2941388990 .fill-B1 {
+                fill: #0a0f25;
+              }
+              .d2-2941388990 .fill-B2 {
+                fill: #676c7e;
+              }
+              .d2-2941388990 .fill-B3 {
+                fill: #9499ab;
+              }
+              .d2-2941388990 .fill-B4 {
+                fill: #cfd2dd;
+              }
+              .d2-2941388990 .fill-B5 {
+                fill: #dee1eb;
+              }
+              .d2-2941388990 .fill-B6 {
+                fill: #eef1f8;
+              }
+              .d2-2941388990 .fill-AA2 {
+                fill: #676c7e;
+              }
+              .d2-2941388990 .fill-AA4 {
+                fill: #cfd2dd;
+              }
+              .d2-2941388990 .fill-AA5 {
+                fill: #dee1eb;
+              }
+              .d2-2941388990 .fill-AB4 {
+                fill: #cfd2dd;
+              }
+              .d2-2941388990 .fill-AB5 {
+                fill: #dee1eb;
+              }
+              .d2-2941388990 .stroke-N1 {
+                stroke: #0a0f25;
+              }
+              .d2-2941388990 .stroke-N2 {
+                stroke: #676c7e;
+              }
+              .d2-2941388990 .stroke-N3 {
+                stroke: #9499ab;
+              }
+              .d2-2941388990 .stroke-N4 {
+                stroke: #cfd2dd;
+              }
+              .d2-2941388990 .stroke-N5 {
+                stroke: #dee1eb;
+              }
+              .d2-2941388990 .stroke-N6 {
+                stroke: #eef1f8;
+              }
+              .d2-2941388990 .stroke-N7 {
+                stroke: #ffffff;
+              }
+              .d2-2941388990 .stroke-B1 {
+                stroke: #0a0f25;
+              }
+              .d2-2941388990 .stroke-B2 {
+                stroke: #676c7e;
+              }
+              .d2-2941388990 .stroke-B3 {
+                stroke: #9499ab;
+              }
+              .d2-2941388990 .stroke-B4 {
+                stroke: #cfd2dd;
+              }
+              .d2-2941388990 .stroke-B5 {
+                stroke: #dee1eb;
+              }
+              .d2-2941388990 .stroke-B6 {
+                stroke: #eef1f8;
+              }
+              .d2-2941388990 .stroke-AA2 {
+                stroke: #676c7e;
+              }
+              .d2-2941388990 .stroke-AA4 {
+                stroke: #cfd2dd;
+              }
+              .d2-2941388990 .stroke-AA5 {
+                stroke: #dee1eb;
+              }
+              .d2-2941388990 .stroke-AB4 {
+                stroke: #cfd2dd;
+              }
+              .d2-2941388990 .stroke-AB5 {
+                stroke: #dee1eb;
+              }
+              .d2-2941388990 .background-color-N1 {
+                background-color: #0a0f25;
+              }
+              .d2-2941388990 .background-color-N2 {
+                background-color: #676c7e;
+              }
+              .d2-2941388990 .background-color-N3 {
+                background-color: #9499ab;
+              }
+              .d2-2941388990 .background-color-N4 {
+                background-color: #cfd2dd;
+              }
+              .d2-2941388990 .background-color-N5 {
+                background-color: #dee1eb;
+              }
+              .d2-2941388990 .background-color-N6 {
+                background-color: #eef1f8;
+              }
+              .d2-2941388990 .background-color-N7 {
+                background-color: #ffffff;
+              }
+              .d2-2941388990 .background-color-B1 {
+                background-color: #0a0f25;
+              }
+              .d2-2941388990 .background-color-B2 {
+                background-color: #676c7e;
+              }
+              .d2-2941388990 .background-color-B3 {
+                background-color: #9499ab;
+              }
+              .d2-2941388990 .background-color-B4 {
+                background-color: #cfd2dd;
+              }
+              .d2-2941388990 .background-color-B5 {
+                background-color: #dee1eb;
+              }
+              .d2-2941388990 .background-color-B6 {
+                background-color: #eef1f8;
+              }
+              .d2-2941388990 .background-color-AA2 {
+                background-color: #676c7e;
+              }
+              .d2-2941388990 .background-color-AA4 {
+                background-color: #cfd2dd;
+              }
+              .d2-2941388990 .background-color-AA5 {
+                background-color: #dee1eb;
+              }
+              .d2-2941388990 .background-color-AB4 {
+                background-color: #cfd2dd;
+              }
+              .d2-2941388990 .background-color-AB5 {
+                background-color: #dee1eb;
+              }
+              .d2-2941388990 .color-N1 {
+                color: #0a0f25;
+              }
+              .d2-2941388990 .color-N2 {
+                color: #676c7e;
+              }
+              .d2-2941388990 .color-N3 {
+                color: #9499ab;
+              }
+              .d2-2941388990 .color-N4 {
+                color: #cfd2dd;
+              }
+              .d2-2941388990 .color-N5 {
+                color: #dee1eb;
+              }
+              .d2-2941388990 .color-N6 {
+                color: #eef1f8;
+              }
+              .d2-2941388990 .color-N7 {
+                color: #ffffff;
+              }
+              .d2-2941388990 .color-B1 {
+                color: #0a0f25;
+              }
+              .d2-2941388990 .color-B2 {
+                color: #676c7e;
+              }
+              .d2-2941388990 .color-B3 {
+                color: #9499ab;
+              }
+              .d2-2941388990 .color-B4 {
+                color: #cfd2dd;
+              }
+              .d2-2941388990 .color-B5 {
+                color: #dee1eb;
+              }
+              .d2-2941388990 .color-B6 {
+                color: #eef1f8;
+              }
+              .d2-2941388990 .color-AA2 {
+                color: #676c7e;
+              }
+              .d2-2941388990 .color-AA4 {
+                color: #cfd2dd;
+              }
+              .d2-2941388990 .color-AA5 {
+                color: #dee1eb;
+              }
+              .d2-2941388990 .color-AB4 {
+                color: #cfd2dd;
+              }
+              .d2-2941388990 .color-AB5 {
+                color: #dee1eb;
+              }
+              .appendix text.text {
+                fill: #0a0f25;
+              }
+              .md {
+                --color-fg-default: #0a0f25;
+                --color-fg-muted: #676c7e;
+                --color-fg-subtle: #9499ab;
+                --color-canvas-default: #ffffff;
+                --color-canvas-subtle: #eef1f8;
+                --color-border-default: #0a0f25;
+                --color-border-muted: #676c7e;
+                --color-neutral-muted: #eef1f8;
+                --color-accent-fg: #676c7e;
+                --color-accent-emphasis: #676c7e;
+                --color-attention-subtle: #676c7e;
+                --color-danger-fg: red;
+              }
+              .sketch-overlay-B1 {
+                fill: url(#streaks-darker-d2-2941388990);
+                mix-blend-mode: lighten;
+              }
+              .sketch-overlay-B2 {
+                fill: url(#streaks-dark-d2-2941388990);
+                mix-blend-mode: overlay;
+              }
+              .sketch-overlay-B3 {
+                fill: url(#streaks-normal-d2-2941388990);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-B4 {
+                fill: url(#streaks-normal-d2-2941388990);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-B5 {
+                fill: url(#streaks-bright-d2-2941388990);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-B6 {
+                fill: url(#streaks-bright-d2-2941388990);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-AA2 {
+                fill: url(#streaks-dark-d2-2941388990);
+                mix-blend-mode: overlay;
+              }
+              .sketch-overlay-AA4 {
+                fill: url(#streaks-normal-d2-2941388990);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-AA5 {
+                fill: url(#streaks-bright-d2-2941388990);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-AB4 {
+                fill: url(#streaks-normal-d2-2941388990);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-AB5 {
+                fill: url(#streaks-bright-d2-2941388990);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-N1 {
+                fill: url(#streaks-darker-d2-2941388990);
+                mix-blend-mode: lighten;
+              }
+              .sketch-overlay-N2 {
+                fill: url(#streaks-dark-d2-2941388990);
+                mix-blend-mode: overlay;
+              }
+              .sketch-overlay-N3 {
+                fill: url(#streaks-normal-d2-2941388990);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-N4 {
+                fill: url(#streaks-normal-d2-2941388990);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-N5 {
+                fill: url(#streaks-bright-d2-2941388990);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-N6 {
+                fill: url(#streaks-bright-d2-2941388990);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-N7 {
+                fill: url(#streaks-bright-d2-2941388990);
+                mix-blend-mode: darken;
+              }
+              .light-code {
+                display: block;
+              }
+              .dark-code {
+                display: none;
+              }
+            </style>
+            <g class="YQ==">
+              <g class="shape">
+                <rect
+                  x="12.000000"
+                  y="12.000000"
+                  width="53.000000"
+                  height="66.000000"
+                  stroke="#0A0F25"
+                  fill="#EEF1F8"
+                  class="stroke-B1 fill-B6"
+                  style="stroke-width: 2"
+                ></rect>
+              </g>
+              <text
+                x="38.500000"
+                y="50.500000"
+                fill="#0A0F25"
+                class="text-bold fill-N1"
+                style="text-anchor: middle; font-size: 16px"
+              >
+                a
+              </text>
+            </g>
+            <g class="Yg==">
+              <g class="shape">
+                <rect
+                  x="12.000000"
+                  y="148.000000"
+                  width="53.000000"
+                  height="66.000000"
+                  stroke="#0A0F25"
+                  fill="#EEF1F8"
+                  class="stroke-B1 fill-B6"
+                  style="stroke-width: 2"
+                ></rect>
+              </g>
+              <text
+                x="38.500000"
+                y="186.500000"
+                fill="#0A0F25"
+                class="text-bold fill-N1"
+                style="text-anchor: middle; font-size: 16px"
+              >
+                b
+              </text>
+            </g>
+            <g class="KGEgLSZndDsgYilbMF0=">
+              <marker
+                id="mk-d2-2941388990-3488378134"
+                markerWidth="10.000000"
+                markerHeight="12.000000"
+                refX="7.000000"
+                refY="6.000000"
+                viewBox="0.000000 0.000000 10.000000 12.000000"
+                orient="auto"
+                markerUnits="userSpaceOnUse"
+              >
+                <polygon
+                  points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000"
+                  fill="#0A0F25"
+                  class="connection fill-B1"
+                  stroke-width="2"
+                ></polygon>
+              </marker>
+              <path
+                d="M 38.500000 80.000000 L 38.500000 144.000000"
+                stroke="#0A0F25"
+                fill="none"
+                class="connection stroke-B1"
+                style="stroke-width: 2"
+                marker-end="url(#mk-d2-2941388990-3488378134)"
+                mask="url(#d2-2941388990)"
+              ></path>
+            </g>
+            <mask
+              id="d2-2941388990"
+              maskUnits="userSpaceOnUse"
+              x="-89"
+              y="-89"
+              width="255"
+              height="404"
+            >
+              <rect
+                x="-89"
+                y="-89"
+                width="255"
+                height="404"
+                fill="white"
+              ></rect>
+            </mask>
+          </svg>
+        </svg>
+      </div>
+    </div>
+    <div
+      class="d2-controls"
+      style="text-align: center; margin-top: 10px; display: block"
+    >
+      <div
+        style="
+          margin-bottom: 10px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+        "
+      >
+        <button
+          class="d2-btn toggle-diagram"
+          style="background: rgb(245, 245, 245)"
+        >
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+            ></path>
+          </svg>
+          toggle
+        </button>
+        <button class="d2-btn download-svg">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"
+            ></path>
+          </svg>
+          SVG
+        </button>
+        <button class="d2-btn download-png">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"
+            ></path>
+          </svg>
+          PNG
+        </button>
+        <button class="d2-btn zoom-in">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h-2v2H9v-2H7V9h2V7h1v2h2v1z"
+            ></path>
+          </svg>
+        </button>
+        <button class="d2-btn zoom-out">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 9h5v1H7z"
+            ></path>
+          </svg>
+        </button>
+        <button class="d2-btn zoom-reset">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+            ></path>
+          </svg>
+        </button>
+        <span class="d2-status zoom-level">100%</span>
+      </div>
+      <div class="d2-status">
+        Theme: 1 | Layout: elk | Direction: down | Sketch: false | Scale: 0.8
+      </div>
+    </div>
+    <script>
+      //<![CDATA[      (function () {        // Utility functions        async function calculateHash(d2Code, params) {          try {            const data = d2Code + JSON.stringify(params);            const hashBuffer = await crypto.subtle.digest(              "SHA-256",              new TextEncoder().encode(data),            );            const hashArray = Array.from(new Uint8Array(hashBuffer));            return hashArray              .map((b) => b.toString(16).padStart(2, "0"))              .join("");          } catch (e) {            console.warn("SHA-256 not available, using fallback hash:", e);            let hash = 0;            const str = d2Code + JSON.stringify(params);            for (let i = 0; i < str.length; i++) {              const char = str.charCodeAt(i);              hash = (hash << 5) - hash + char;              hash = hash & hash;            }            return Math.abs(hash).toString(16);          }        }        // IndexedDB helpers        function openCacheDB() {          return new Promise((resolve, reject) => {            const request = indexedDB.open("d2-cache", 1);            request.onupgradeneeded = (event) => {              const db = event.target.result;              if (!db.objectStoreNames.contains("diagrams")) {                db.createObjectStore("diagrams", { keyPath: "hash" });              }            };            request.onsuccess = (event) => resolve(event.target.result);            request.onerror = (event) => reject(event.target.error);          });        }        async function getCachedDiagram(hash) {          const db = await openCacheDB();          return new Promise((resolve, reject) => {            const transaction = db.transaction(["diagrams"], "readonly");            const store = transaction.objectStore("diagrams");            const request = store.get(hash);            request.onsuccess = (event) => resolve(event.target.result);            request.onerror = (event) => reject(event.target.error);          });        }        async function setCachedDiagram(hash, result, format) {          const db = await openCacheDB();          return new Promise((resolve, reject) => {            const transaction = db.transaction(["diagrams"], "readwrite");            const store = transaction.objectStore("diagrams");            const item = { hash, result, format, timestamp: Date.now() };            const request = store.put(item);            request.onsuccess = () => resolve();            request.onerror = (event) => reject(event.target.error);          });        }        // Render diagram        async function renderDiagram(          result,          format,          containerId,          d2Code,          params,          macroDiv,        ) {          const diagramDiv = macroDiv.querySelector(".d2-diagram");          const controlsDiv = macroDiv.querySelector(".d2-controls");          controlsDiv.style.display = "block";          const diagramVisibleKey = "diagram-visible-" + containerId;          const savedVisible =            localStorage.getItem(diagramVisibleKey) !== "false";          diagramDiv.style.display = savedVisible ? "block" : "none";          if (format === "svg") {            let scale = 1;            let tx = 0,              ty = 0;            const zoomLevelSpan = macroDiv.querySelector(".zoom-level");            const svgContainer = document.createElement("div");            svgContainer.id = "svg-container-" + containerId;            svgContainer.style.overflow = "hidden";            svgContainer.style.maxWidth = "100%";            svgContainer.style.cursor = "grab";            svgContainer.style.userSelect = "none";            svgContainer.style.border = "1px solid #e0e0e0";            svgContainer.style.borderRadius = "4px";            svgContainer.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";            const responsiveSvg = result.replace(              /<svg([^>]*)>/,              '<svg$1 style="transform-origin: top left;">',            );            svgContainer.innerHTML = responsiveSvg;            diagramDiv.innerHTML = "";            diagramDiv.appendChild(svgContainer);            diagramDiv.style.display = savedVisible ? "block" : "none";            const svgElement = svgContainer.querySelector("svg");            // Restore pan zoom            const panZoomKey = "panzoom-" + containerId;            const saved = JSON.parse(localStorage.getItem(panZoomKey) || "{}");            scale = saved.scale || 1;            tx = saved.tx || 0;            ty = saved.ty || 0;            svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;            zoomLevelSpan.textContent = Math.round(scale * 100) + "%";            let isDragging = false;            let startX, startY;            svgContainer.onmousedown = function (e) {              isDragging = true;              startX = e.clientX - tx;              startY = e.clientY - ty;              svgContainer.style.cursor = "grabbing";              e.preventDefault();            };            svgContainer.onmousemove = function (e) {              if (isDragging) {                tx = e.clientX - startX;                ty = e.clientY - startY;                svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;                localStorage.setItem(                  panZoomKey,                  JSON.stringify({ tx, ty, scale }),                );              }            };            svgContainer.onmouseup = function () {              isDragging = false;              svgContainer.style.cursor = "grab";            };            svgContainer.onmouseleave = function () {              isDragging = false;              svgContainer.style.cursor = "grab";            };            macroDiv.querySelector(".zoom-in").onclick = function () {              scale *= 1.2;              svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;              zoomLevelSpan.textContent = Math.round(scale * 100) + "%";              localStorage.setItem(                panZoomKey,                JSON.stringify({ tx, ty, scale }),              );            };            macroDiv.querySelector(".zoom-out").onclick = function () {              scale /= 1.2;              svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;              zoomLevelSpan.textContent = Math.round(scale * 100) + "%";              localStorage.setItem(                panZoomKey,                JSON.stringify({ tx, ty, scale }),              );            };            macroDiv.querySelector(".zoom-reset").onclick = function () {              scale = 1;              tx = 0;              ty = 0;              svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;              zoomLevelSpan.textContent = "100%";              localStorage.setItem(                panZoomKey,                JSON.stringify({ tx, ty, scale }),              );            };            macroDiv.querySelector(".toggle-diagram").onclick = function () {              const isVisible = diagramDiv.style.display !== "none";              diagramDiv.style.display = isVisible ? "none" : "block";              localStorage.setItem(diagramVisibleKey, !isVisible);              const toggleBtn = macroDiv.querySelector(".toggle-diagram");              toggleBtn.style.background = !isVisible ? "#f5f5f5" : "#ccc";            };          } else {            const img = document.createElement("img");            img.src = URL.createObjectURL(result);            img.style.border = "1px solid #e0e0e0";            img.style.borderRadius = "4px";            img.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";            diagramDiv.innerHTML = "";            diagramDiv.appendChild(img);            diagramDiv.style.display = savedVisible ? "block" : "none";            // For PNG, disable zoom buttons            macroDiv.querySelector(".zoom-in").style.display = "none";            macroDiv.querySelector(".zoom-out").style.display = "none";            macroDiv.querySelector(".zoom-reset").style.display = "none";            macroDiv.querySelector(".zoom-level").style.display = "none";            macroDiv.querySelector(".toggle-diagram").onclick = function () {              const isVisible = diagramDiv.style.display !== "none";              diagramDiv.style.display = isVisible ? "none" : "block";              localStorage.setItem(diagramVisibleKey, !isVisible);              const toggleBtn = macroDiv.querySelector(".toggle-diagram");              toggleBtn.style.background = !isVisible ? "#f5f5f5" : "#ccc";            };          }          const toggleBtn = macroDiv.querySelector(".toggle-diagram");          toggleBtn.style.background = savedVisible ? "#f5f5f5" : "#ccc";          // Setup download handlers          setupDownloadHandlers(            d2Code,            params,            format,            containerId,            result,            macroDiv,          );          // Setup download handlers          setupDownloadHandlers(            d2Code,            params,            format,            containerId,            result,            macroDiv,          );        }        // Fetch diagram        async function fetchDiagram(          d2Code,          params,          hash,          format,          containerId,          macroDiv,        ) {          const formData = new FormData();          formData.append("d2", d2Code);          formData.append("theme", params.theme);          formData.append("layout", params.layout);          formData.append("sketch", params.sketch);          formData.append("scale", params.scale);          if (params.preset) {            formData.append("preset", params.preset);          }          const response = await fetch(            "https://d2lang.phoenixit.ru/" + format,            {              method: "POST",              body: formData,            },          );          if (!response.ok) {            const text = await response.text();            throw new Error(text || "HTTP " + response.status);          }          const result =            format === "svg" ? await response.text() : await response.blob();          await setCachedDiagram(hash, result, format);          await renderDiagram(            result,            format,            containerId,            d2Code,            params,            macroDiv,          );        }        function setupDownloadHandlers(          d2Code,          params,          format,          containerId,          storedResult,          macroDiv,        ) {          macroDiv.querySelector(".download-svg").onclick = async function () {            if (format === "svg") {              const blob = new Blob([storedResult], { type: "image/svg+xml" });              const url = URL.createObjectURL(blob);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.svg";              a.click();              URL.revokeObjectURL(url);            } else {              // Fetch SVG on demand              const formDataSvg = new FormData();              formDataSvg.append("d2", d2Code);              formDataSvg.append("theme", params.theme);              formDataSvg.append("layout", params.layout);              formDataSvg.append("sketch", params.sketch);              formDataSvg.append("scale", params.scale);              if (params.preset) {                formDataSvg.append("preset", params.preset);              }              const res = await fetch("https://d2lang.phoenixit.ru/svg", {                method: "POST",                body: formDataSvg,              });              const svg = await res.text();              const blob = new Blob([svg], { type: "image/svg+xml" });              const url = URL.createObjectURL(blob);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.svg";              a.click();              URL.revokeObjectURL(url);            }          };          macroDiv.querySelector(".download-png").onclick = async function () {            if (format === "png") {              const url = URL.createObjectURL(storedResult);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.png";              a.click();              URL.revokeObjectURL(url);            } else {              // Fetch PNG on demand              const formDataPng = new FormData();              formDataPng.append("d2", d2Code);              formDataPng.append("theme", params.theme);              formDataPng.append("layout", params.layout);              formDataPng.append("sketch", params.sketch);              formDataPng.append("scale", params.scale);              if (params.preset) {                formDataPng.append("preset", params.preset);              }              const res = await fetch("https://d2lang.phoenixit.ru/png", {                method: "POST",                body: formDataPng,              });              const blob = await res.blob();              const url = URL.createObjectURL(blob);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.png";              a.click();              URL.revokeObjectURL(url);            }          };        }        // Main function        async function initDiagram(macroDiv) {          console.log("Macro script loaded");          const containerId = "d2-" + Math.random().toString(36).substr(2, 9);          const diagramDiv = macroDiv.querySelector(".d2-diagram");          const d2CodeDiv = macroDiv.querySelector(".d2-code");          if (!diagramDiv || !d2CodeDiv) return;          const diagramVisibleKey = "diagram-visible-" + containerId;          const savedVisible =            localStorage.getItem(diagramVisibleKey) !== "false";          diagramDiv.style.display = savedVisible ? "block" : "none";          let d2Code = d2CodeDiv.textContent;          if ("down") {            d2Code = "direction: " + "down" + "\n" + d2Code;          }          if (!d2Code.trim()) {            diagramDiv.innerHTML =              '<div style="color: #d63031; padding: 20px;">❌ No D2 code found</div>';            return;          }          console.log("D2 code length:", d2Code.length);          const params = {            theme: "1",            layout: "elk",            sketch: "false",            scale: "0.8",            direction: "down",            preset: "",          };          const hash = await calculateHash(d2Code, params);          const cached = await getCachedDiagram(hash);          if (cached && cached.format === "svg") {            console.log("Using cached diagram");            await renderDiagram(              cached.result,              "svg",              containerId,              d2Code,              params,              macroDiv,            );          } else {            console.log("Fetching diagram");            await fetchDiagram(              d2Code,              params,              hash,              "svg",              containerId,              macroDiv,            );          }        }        // Find the macro div and initialize        const script = document.currentScript;        const macroDiv = script.parentElement;        if (macroDiv && macroDiv.classList.contains("d2-macro")) {          initDiagram(macroDiv).catch((e) => {            const diagramDiv = macroDiv.querySelector(".d2-diagram");            if (diagramDiv) {              diagramDiv.innerHTML =                '<div style="color: #d63031; padding: 20px;">❌ JS Error: ' +                e.message +                "</div>";            }          });        }      })();      //]]>
+    </script>
+  </div>
+  <style>
+    .d2-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+    .d2-btn:hover {
+      background: #e0e0e0;
+    }
+    .d2-btn svg {
+      flex-shrink: 0;
+    }
+    .d2-status {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      margin-top: 5px;
+    }
+  </style>
+  <p></p>
+  <h2
+    class="auto-cursor-target"
+    talk-marker="2"
+    talk-page-id="462329155"
+    talk-page-version="1"
+    id="id-тестоваястраничкаd2-Заголовок2"
+  >
+    <span
+      class="handy-header aui-icon aui-icon-small aui-iconfont-link"
+      title="Copy link"
+    ></span
+    >Заголовок 2
+  </h2>
+  <p>
+    <span
+      class="conf-macro output-inline"
+      data-hasbody="true"
+      data-macro-name="d2"
+    >
+    </span>
+  </p>
+  <div class="d2-macro">
+    <div class="d2-code" style="display: none">a -&amp;gt; c</div>
+    <div
+      class="d2-diagram"
+      style="text-align: center; padding: 10px; display: block"
+    >
+      <div
+        id="svg-container-d2-909sz5dxs"
+        style="
+          overflow: hidden;
+          max-width: 100%;
+          cursor: grab;
+          user-select: none;
+          border: 1px solid rgb(224, 224, 224);
+          border-radius: 4px;
+          box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px;
+        "
+      >
+        <!--?xml version="1.0" encoding="utf-8"?--><svg
+          xmlns="http://www.w3.org/2000/svg"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
+          data-d2-version="v0.7.1"
+          preserveAspectRatio="xMinYMin meet"
+          viewBox="0 0 255 404"
+          width="204"
+          height="324"
+          style="
+            transform-origin: left top 0px;
+            transform: scale(1) translate(0px);
+          "
+        >
+          <svg
+            class="d2-3221274818 d2-svg"
+            width="255"
+            height="404"
+            viewBox="-89 -89 255 404"
+          >
+            <rect
+              x="-89.000000"
+              y="-89.000000"
+              width="255.000000"
+              height="404.000000"
+              rx="0.000000"
+              fill="#FFFFFF"
+              class="fill-N7"
+              stroke-width="0"
+            ></rect>
+            <style type="text/css">
+              .d2-3221274818 .text-bold {
+                font-family: "d2-3221274818-font-bold";
+              }
+              @font-face {
+                font-family: d2-3221274818-font-bold;
+                src: url("data:application/font-woff;base64,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");
+              }
+            </style>
+            <style type="text/css">
+              .shape {
+                shape-rendering: geometricPrecision;
+                stroke-linejoin: round;
+              }
+              .connection {
+                stroke-linecap: round;
+                stroke-linejoin: round;
+              }
+              .blend {
+                mix-blend-mode: multiply;
+                opacity: 0.5;
+              }
+              .d2-3221274818 .fill-N1 {
+                fill: #0a0f25;
+              }
+              .d2-3221274818 .fill-N2 {
+                fill: #676c7e;
+              }
+              .d2-3221274818 .fill-N3 {
+                fill: #9499ab;
+              }
+              .d2-3221274818 .fill-N4 {
+                fill: #cfd2dd;
+              }
+              .d2-3221274818 .fill-N5 {
+                fill: #dee1eb;
+              }
+              .d2-3221274818 .fill-N6 {
+                fill: #eef1f8;
+              }
+              .d2-3221274818 .fill-N7 {
+                fill: #ffffff;
+              }
+              .d2-3221274818 .fill-B1 {
+                fill: #0a0f25;
+              }
+              .d2-3221274818 .fill-B2 {
+                fill: #676c7e;
+              }
+              .d2-3221274818 .fill-B3 {
+                fill: #9499ab;
+              }
+              .d2-3221274818 .fill-B4 {
+                fill: #cfd2dd;
+              }
+              .d2-3221274818 .fill-B5 {
+                fill: #dee1eb;
+              }
+              .d2-3221274818 .fill-B6 {
+                fill: #eef1f8;
+              }
+              .d2-3221274818 .fill-AA2 {
+                fill: #676c7e;
+              }
+              .d2-3221274818 .fill-AA4 {
+                fill: #cfd2dd;
+              }
+              .d2-3221274818 .fill-AA5 {
+                fill: #dee1eb;
+              }
+              .d2-3221274818 .fill-AB4 {
+                fill: #cfd2dd;
+              }
+              .d2-3221274818 .fill-AB5 {
+                fill: #dee1eb;
+              }
+              .d2-3221274818 .stroke-N1 {
+                stroke: #0a0f25;
+              }
+              .d2-3221274818 .stroke-N2 {
+                stroke: #676c7e;
+              }
+              .d2-3221274818 .stroke-N3 {
+                stroke: #9499ab;
+              }
+              .d2-3221274818 .stroke-N4 {
+                stroke: #cfd2dd;
+              }
+              .d2-3221274818 .stroke-N5 {
+                stroke: #dee1eb;
+              }
+              .d2-3221274818 .stroke-N6 {
+                stroke: #eef1f8;
+              }
+              .d2-3221274818 .stroke-N7 {
+                stroke: #ffffff;
+              }
+              .d2-3221274818 .stroke-B1 {
+                stroke: #0a0f25;
+              }
+              .d2-3221274818 .stroke-B2 {
+                stroke: #676c7e;
+              }
+              .d2-3221274818 .stroke-B3 {
+                stroke: #9499ab;
+              }
+              .d2-3221274818 .stroke-B4 {
+                stroke: #cfd2dd;
+              }
+              .d2-3221274818 .stroke-B5 {
+                stroke: #dee1eb;
+              }
+              .d2-3221274818 .stroke-B6 {
+                stroke: #eef1f8;
+              }
+              .d2-3221274818 .stroke-AA2 {
+                stroke: #676c7e;
+              }
+              .d2-3221274818 .stroke-AA4 {
+                stroke: #cfd2dd;
+              }
+              .d2-3221274818 .stroke-AA5 {
+                stroke: #dee1eb;
+              }
+              .d2-3221274818 .stroke-AB4 {
+                stroke: #cfd2dd;
+              }
+              .d2-3221274818 .stroke-AB5 {
+                stroke: #dee1eb;
+              }
+              .d2-3221274818 .background-color-N1 {
+                background-color: #0a0f25;
+              }
+              .d2-3221274818 .background-color-N2 {
+                background-color: #676c7e;
+              }
+              .d2-3221274818 .background-color-N3 {
+                background-color: #9499ab;
+              }
+              .d2-3221274818 .background-color-N4 {
+                background-color: #cfd2dd;
+              }
+              .d2-3221274818 .background-color-N5 {
+                background-color: #dee1eb;
+              }
+              .d2-3221274818 .background-color-N6 {
+                background-color: #eef1f8;
+              }
+              .d2-3221274818 .background-color-N7 {
+                background-color: #ffffff;
+              }
+              .d2-3221274818 .background-color-B1 {
+                background-color: #0a0f25;
+              }
+              .d2-3221274818 .background-color-B2 {
+                background-color: #676c7e;
+              }
+              .d2-3221274818 .background-color-B3 {
+                background-color: #9499ab;
+              }
+              .d2-3221274818 .background-color-B4 {
+                background-color: #cfd2dd;
+              }
+              .d2-3221274818 .background-color-B5 {
+                background-color: #dee1eb;
+              }
+              .d2-3221274818 .background-color-B6 {
+                background-color: #eef1f8;
+              }
+              .d2-3221274818 .background-color-AA2 {
+                background-color: #676c7e;
+              }
+              .d2-3221274818 .background-color-AA4 {
+                background-color: #cfd2dd;
+              }
+              .d2-3221274818 .background-color-AA5 {
+                background-color: #dee1eb;
+              }
+              .d2-3221274818 .background-color-AB4 {
+                background-color: #cfd2dd;
+              }
+              .d2-3221274818 .background-color-AB5 {
+                background-color: #dee1eb;
+              }
+              .d2-3221274818 .color-N1 {
+                color: #0a0f25;
+              }
+              .d2-3221274818 .color-N2 {
+                color: #676c7e;
+              }
+              .d2-3221274818 .color-N3 {
+                color: #9499ab;
+              }
+              .d2-3221274818 .color-N4 {
+                color: #cfd2dd;
+              }
+              .d2-3221274818 .color-N5 {
+                color: #dee1eb;
+              }
+              .d2-3221274818 .color-N6 {
+                color: #eef1f8;
+              }
+              .d2-3221274818 .color-N7 {
+                color: #ffffff;
+              }
+              .d2-3221274818 .color-B1 {
+                color: #0a0f25;
+              }
+              .d2-3221274818 .color-B2 {
+                color: #676c7e;
+              }
+              .d2-3221274818 .color-B3 {
+                color: #9499ab;
+              }
+              .d2-3221274818 .color-B4 {
+                color: #cfd2dd;
+              }
+              .d2-3221274818 .color-B5 {
+                color: #dee1eb;
+              }
+              .d2-3221274818 .color-B6 {
+                color: #eef1f8;
+              }
+              .d2-3221274818 .color-AA2 {
+                color: #676c7e;
+              }
+              .d2-3221274818 .color-AA4 {
+                color: #cfd2dd;
+              }
+              .d2-3221274818 .color-AA5 {
+                color: #dee1eb;
+              }
+              .d2-3221274818 .color-AB4 {
+                color: #cfd2dd;
+              }
+              .d2-3221274818 .color-AB5 {
+                color: #dee1eb;
+              }
+              .appendix text.text {
+                fill: #0a0f25;
+              }
+              .md {
+                --color-fg-default: #0a0f25;
+                --color-fg-muted: #676c7e;
+                --color-fg-subtle: #9499ab;
+                --color-canvas-default: #ffffff;
+                --color-canvas-subtle: #eef1f8;
+                --color-border-default: #0a0f25;
+                --color-border-muted: #676c7e;
+                --color-neutral-muted: #eef1f8;
+                --color-accent-fg: #676c7e;
+                --color-accent-emphasis: #676c7e;
+                --color-attention-subtle: #676c7e;
+                --color-danger-fg: red;
+              }
+              .sketch-overlay-B1 {
+                fill: url(#streaks-darker-d2-3221274818);
+                mix-blend-mode: lighten;
+              }
+              .sketch-overlay-B2 {
+                fill: url(#streaks-dark-d2-3221274818);
+                mix-blend-mode: overlay;
+              }
+              .sketch-overlay-B3 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-B4 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-B5 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-B6 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-AA2 {
+                fill: url(#streaks-dark-d2-3221274818);
+                mix-blend-mode: overlay;
+              }
+              .sketch-overlay-AA4 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-AA5 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-AB4 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-AB5 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-N1 {
+                fill: url(#streaks-darker-d2-3221274818);
+                mix-blend-mode: lighten;
+              }
+              .sketch-overlay-N2 {
+                fill: url(#streaks-dark-d2-3221274818);
+                mix-blend-mode: overlay;
+              }
+              .sketch-overlay-N3 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-N4 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-N5 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-N6 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-N7 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .light-code {
+                display: block;
+              }
+              .dark-code {
+                display: none;
+              }
+            </style>
+            <g class="YQ==">
+              <g class="shape">
+                <rect
+                  x="12.000000"
+                  y="12.000000"
+                  width="53.000000"
+                  height="66.000000"
+                  stroke="#0A0F25"
+                  fill="#EEF1F8"
+                  class="stroke-B1 fill-B6"
+                  style="stroke-width: 2"
+                ></rect>
+              </g>
+              <text
+                x="38.500000"
+                y="50.500000"
+                fill="#0A0F25"
+                class="text-bold fill-N1"
+                style="text-anchor: middle; font-size: 16px"
+              >
+                a
+              </text>
+            </g>
+            <g class="Yw==">
+              <g class="shape">
+                <rect
+                  x="12.000000"
+                  y="148.000000"
+                  width="53.000000"
+                  height="66.000000"
+                  stroke="#0A0F25"
+                  fill="#EEF1F8"
+                  class="stroke-B1 fill-B6"
+                  style="stroke-width: 2"
+                ></rect>
+              </g>
+              <text
+                x="38.500000"
+                y="186.500000"
+                fill="#0A0F25"
+                class="text-bold fill-N1"
+                style="text-anchor: middle; font-size: 16px"
+              >
+                c
+              </text>
+            </g>
+            <g class="KGEgLSZndDsgYylbMF0=">
+              <marker
+                id="mk-d2-3221274818-3488378134"
+                markerWidth="10.000000"
+                markerHeight="12.000000"
+                refX="7.000000"
+                refY="6.000000"
+                viewBox="0.000000 0.000000 10.000000 12.000000"
+                orient="auto"
+                markerUnits="userSpaceOnUse"
+              >
+                <polygon
+                  points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000"
+                  fill="#0A0F25"
+                  class="connection fill-B1"
+                  stroke-width="2"
+                ></polygon>
+              </marker>
+              <path
+                d="M 38.500000 80.000000 L 38.500000 144.000000"
+                stroke="#0A0F25"
+                fill="none"
+                class="connection stroke-B1"
+                style="stroke-width: 2"
+                marker-end="url(#mk-d2-3221274818-3488378134)"
+                mask="url(#d2-3221274818)"
+              ></path>
+            </g>
+            <mask
+              id="d2-3221274818"
+              maskUnits="userSpaceOnUse"
+              x="-89"
+              y="-89"
+              width="255"
+              height="404"
+            >
+              <rect
+                x="-89"
+                y="-89"
+                width="255"
+                height="404"
+                fill="white"
+              ></rect>
+            </mask>
+          </svg>
+        </svg>
+      </div>
+    </div>
+    <div
+      class="d2-controls"
+      style="text-align: center; margin-top: 10px; display: block"
+    >
+      <div
+        style="
+          margin-bottom: 10px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+        "
+      >
+        <button
+          class="d2-btn toggle-diagram"
+          style="background: rgb(245, 245, 245)"
+        >
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+            ></path>
+          </svg>
+          toggle
+        </button>
+        <button class="d2-btn download-svg">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"
+            ></path>
+          </svg>
+          SVG
+        </button>
+        <button class="d2-btn download-png">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"
+            ></path>
+          </svg>
+          PNG
+        </button>
+        <button class="d2-btn zoom-in">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h-2v2H9v-2H7V9h2V7h1v2h2v1z"
+            ></path>
+          </svg>
+        </button>
+        <button class="d2-btn zoom-out">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 9h5v1H7z"
+            ></path>
+          </svg>
+        </button>
+        <button class="d2-btn zoom-reset">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+            ></path>
+          </svg>
+        </button>
+        <span class="d2-status zoom-level">100%</span>
+      </div>
+      <div class="d2-status">
+        Theme: 1 | Layout: elk | Direction: down | Sketch: false | Scale: 0.8
+      </div>
+    </div>
+    <script>
+      //<![CDATA[      (function () {        // Utility functions        async function calculateHash(d2Code, params) {          try {            const data = d2Code + JSON.stringify(params);            const hashBuffer = await crypto.subtle.digest(              "SHA-256",              new TextEncoder().encode(data),            );            const hashArray = Array.from(new Uint8Array(hashBuffer));            return hashArray              .map((b) => b.toString(16).padStart(2, "0"))              .join("");          } catch (e) {            console.warn("SHA-256 not available, using fallback hash:", e);            let hash = 0;            const str = d2Code + JSON.stringify(params);            for (let i = 0; i < str.length; i++) {              const char = str.charCodeAt(i);              hash = (hash << 5) - hash + char;              hash = hash & hash;            }            return Math.abs(hash).toString(16);          }        }        // IndexedDB helpers        function openCacheDB() {          return new Promise((resolve, reject) => {            const request = indexedDB.open("d2-cache", 1);            request.onupgradeneeded = (event) => {              const db = event.target.result;              if (!db.objectStoreNames.contains("diagrams")) {                db.createObjectStore("diagrams", { keyPath: "hash" });              }            };            request.onsuccess = (event) => resolve(event.target.result);            request.onerror = (event) => reject(event.target.error);          });        }        async function getCachedDiagram(hash) {          const db = await openCacheDB();          return new Promise((resolve, reject) => {            const transaction = db.transaction(["diagrams"], "readonly");            const store = transaction.objectStore("diagrams");            const request = store.get(hash);            request.onsuccess = (event) => resolve(event.target.result);            request.onerror = (event) => reject(event.target.error);          });        }        async function setCachedDiagram(hash, result, format) {          const db = await openCacheDB();          return new Promise((resolve, reject) => {            const transaction = db.transaction(["diagrams"], "readwrite");            const store = transaction.objectStore("diagrams");            const item = { hash, result, format, timestamp: Date.now() };            const request = store.put(item);            request.onsuccess = () => resolve();            request.onerror = (event) => reject(event.target.error);          });        }        // Render diagram        async function renderDiagram(          result,          format,          containerId,          d2Code,          params,          macroDiv,        ) {          const diagramDiv = macroDiv.querySelector(".d2-diagram");          const controlsDiv = macroDiv.querySelector(".d2-controls");          controlsDiv.style.display = "block";          const diagramVisibleKey = "diagram-visible-" + containerId;          const savedVisible =            localStorage.getItem(diagramVisibleKey) !== "false";          diagramDiv.style.display = savedVisible ? "block" : "none";          if (format === "svg") {            let scale = 1;            let tx = 0,              ty = 0;            const zoomLevelSpan = macroDiv.querySelector(".zoom-level");            const svgContainer = document.createElement("div");            svgContainer.id = "svg-container-" + containerId;            svgContainer.style.overflow = "hidden";            svgContainer.style.maxWidth = "100%";            svgContainer.style.cursor = "grab";            svgContainer.style.userSelect = "none";            svgContainer.style.border = "1px solid #e0e0e0";            svgContainer.style.borderRadius = "4px";            svgContainer.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";            const responsiveSvg = result.replace(              /<svg([^>]*)>/,              '<svg$1 style="transform-origin: top left;">',            );            svgContainer.innerHTML = responsiveSvg;            diagramDiv.innerHTML = "";            diagramDiv.appendChild(svgContainer);            diagramDiv.style.display = savedVisible ? "block" : "none";            const svgElement = svgContainer.querySelector("svg");            // Restore pan zoom            const panZoomKey = "panzoom-" + containerId;            const saved = JSON.parse(localStorage.getItem(panZoomKey) || "{}");            scale = saved.scale || 1;            tx = saved.tx || 0;            ty = saved.ty || 0;            svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;            zoomLevelSpan.textContent = Math.round(scale * 100) + "%";            let isDragging = false;            let startX, startY;            svgContainer.onmousedown = function (e) {              isDragging = true;              startX = e.clientX - tx;              startY = e.clientY - ty;              svgContainer.style.cursor = "grabbing";              e.preventDefault();            };            svgContainer.onmousemove = function (e) {              if (isDragging) {                tx = e.clientX - startX;                ty = e.clientY - startY;                svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;                localStorage.setItem(                  panZoomKey,                  JSON.stringify({ tx, ty, scale }),                );              }            };            svgContainer.onmouseup = function () {              isDragging = false;              svgContainer.style.cursor = "grab";            };            svgContainer.onmouseleave = function () {              isDragging = false;              svgContainer.style.cursor = "grab";            };            macroDiv.querySelector(".zoom-in").onclick = function () {              scale *= 1.2;              svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;              zoomLevelSpan.textContent = Math.round(scale * 100) + "%";              localStorage.setItem(                panZoomKey,                JSON.stringify({ tx, ty, scale }),              );            };            macroDiv.querySelector(".zoom-out").onclick = function () {              scale /= 1.2;              svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;              zoomLevelSpan.textContent = Math.round(scale * 100) + "%";              localStorage.setItem(                panZoomKey,                JSON.stringify({ tx, ty, scale }),              );            };            macroDiv.querySelector(".zoom-reset").onclick = function () {              scale = 1;              tx = 0;              ty = 0;              svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;              zoomLevelSpan.textContent = "100%";              localStorage.setItem(                panZoomKey,                JSON.stringify({ tx, ty, scale }),              );            };            macroDiv.querySelector(".toggle-diagram").onclick = function () {              const isVisible = diagramDiv.style.display !== "none";              diagramDiv.style.display = isVisible ? "none" : "block";              localStorage.setItem(diagramVisibleKey, !isVisible);              const toggleBtn = macroDiv.querySelector(".toggle-diagram");              toggleBtn.style.background = !isVisible ? "#f5f5f5" : "#ccc";            };          } else {            const img = document.createElement("img");            img.src = URL.createObjectURL(result);            img.style.border = "1px solid #e0e0e0";            img.style.borderRadius = "4px";            img.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";            diagramDiv.innerHTML = "";            diagramDiv.appendChild(img);            diagramDiv.style.display = savedVisible ? "block" : "none";            // For PNG, disable zoom buttons            macroDiv.querySelector(".zoom-in").style.display = "none";            macroDiv.querySelector(".zoom-out").style.display = "none";            macroDiv.querySelector(".zoom-reset").style.display = "none";            macroDiv.querySelector(".zoom-level").style.display = "none";            macroDiv.querySelector(".toggle-diagram").onclick = function () {              const isVisible = diagramDiv.style.display !== "none";              diagramDiv.style.display = isVisible ? "none" : "block";              localStorage.setItem(diagramVisibleKey, !isVisible);              const toggleBtn = macroDiv.querySelector(".toggle-diagram");              toggleBtn.style.background = !isVisible ? "#f5f5f5" : "#ccc";            };          }          const toggleBtn = macroDiv.querySelector(".toggle-diagram");          toggleBtn.style.background = savedVisible ? "#f5f5f5" : "#ccc";          // Setup download handlers          setupDownloadHandlers(            d2Code,            params,            format,            containerId,            result,            macroDiv,          );          // Setup download handlers          setupDownloadHandlers(            d2Code,            params,            format,            containerId,            result,            macroDiv,          );        }        // Fetch diagram        async function fetchDiagram(          d2Code,          params,          hash,          format,          containerId,          macroDiv,        ) {          const formData = new FormData();          formData.append("d2", d2Code);          formData.append("theme", params.theme);          formData.append("layout", params.layout);          formData.append("sketch", params.sketch);          formData.append("scale", params.scale);          if (params.preset) {            formData.append("preset", params.preset);          }          const response = await fetch(            "https://d2lang.phoenixit.ru/" + format,            {              method: "POST",              body: formData,            },          );          if (!response.ok) {            const text = await response.text();            throw new Error(text || "HTTP " + response.status);          }          const result =            format === "svg" ? await response.text() : await response.blob();          await setCachedDiagram(hash, result, format);          await renderDiagram(            result,            format,            containerId,            d2Code,            params,            macroDiv,          );        }        function setupDownloadHandlers(          d2Code,          params,          format,          containerId,          storedResult,          macroDiv,        ) {          macroDiv.querySelector(".download-svg").onclick = async function () {            if (format === "svg") {              const blob = new Blob([storedResult], { type: "image/svg+xml" });              const url = URL.createObjectURL(blob);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.svg";              a.click();              URL.revokeObjectURL(url);            } else {              // Fetch SVG on demand              const formDataSvg = new FormData();              formDataSvg.append("d2", d2Code);              formDataSvg.append("theme", params.theme);              formDataSvg.append("layout", params.layout);              formDataSvg.append("sketch", params.sketch);              formDataSvg.append("scale", params.scale);              if (params.preset) {                formDataSvg.append("preset", params.preset);              }              const res = await fetch("https://d2lang.phoenixit.ru/svg", {                method: "POST",                body: formDataSvg,              });              const svg = await res.text();              const blob = new Blob([svg], { type: "image/svg+xml" });              const url = URL.createObjectURL(blob);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.svg";              a.click();              URL.revokeObjectURL(url);            }          };          macroDiv.querySelector(".download-png").onclick = async function () {            if (format === "png") {              const url = URL.createObjectURL(storedResult);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.png";              a.click();              URL.revokeObjectURL(url);            } else {              // Fetch PNG on demand              const formDataPng = new FormData();              formDataPng.append("d2", d2Code);              formDataPng.append("theme", params.theme);              formDataPng.append("layout", params.layout);              formDataPng.append("sketch", params.sketch);              formDataPng.append("scale", params.scale);              if (params.preset) {                formDataPng.append("preset", params.preset);              }              const res = await fetch("https://d2lang.phoenixit.ru/png", {                method: "POST",                body: formDataPng,              });              const blob = await res.blob();              const url = URL.createObjectURL(blob);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.png";              a.click();              URL.revokeObjectURL(url);            }          };        }        // Main function        async function initDiagram(macroDiv) {          console.log("Macro script loaded");          const containerId = "d2-" + Math.random().toString(36).substr(2, 9);          const diagramDiv = macroDiv.querySelector(".d2-diagram");          const d2CodeDiv = macroDiv.querySelector(".d2-code");          if (!diagramDiv || !d2CodeDiv) return;          const diagramVisibleKey = "diagram-visible-" + containerId;          const savedVisible =            localStorage.getItem(diagramVisibleKey) !== "false";          diagramDiv.style.display = savedVisible ? "block" : "none";          let d2Code = d2CodeDiv.textContent;          if ("down") {            d2Code = "direction: " + "down" + "\n" + d2Code;          }          if (!d2Code.trim()) {            diagramDiv.innerHTML =              '<div style="color: #d63031; padding: 20px;">❌ No D2 code found</div>';            return;          }          console.log("D2 code length:", d2Code.length);          const params = {            theme: "1",            layout: "elk",            sketch: "false",            scale: "0.8",            direction: "down",            preset: "",          };          const hash = await calculateHash(d2Code, params);          const cached = await getCachedDiagram(hash);          if (cached && cached.format === "svg") {            console.log("Using cached diagram");            await renderDiagram(              cached.result,              "svg",              containerId,              d2Code,              params,              macroDiv,            );          } else {            console.log("Fetching diagram");            await fetchDiagram(              d2Code,              params,              hash,              "svg",              containerId,              macroDiv,            );          }        }        // Find the macro div and initialize        const script = document.currentScript;        const macroDiv = script.parentElement;        if (macroDiv && macroDiv.classList.contains("d2-macro")) {          initDiagram(macroDiv).catch((e) => {            const diagramDiv = macroDiv.querySelector(".d2-diagram");            if (diagramDiv) {              diagramDiv.innerHTML =                '<div style="color: #d63031; padding: 20px;">❌ JS Error: ' +                e.message +                "</div>";            }          });        }      })();      //]]>
+    </script>
+  </div>
+  <style>
+    .d2-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+    .d2-btn:hover {
+      background: #e0e0e0;
+    }
+    .d2-btn svg {
+      flex-shrink: 0;
+    }
+    .d2-status {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      margin-top: 5px;
+    }
+  </style>
+  <p></p>
+  <h2
+    class="auto-cursor-target"
+    talk-marker="4"
+    talk-page-id="462329155"
+    talk-page-version="1"
+    id="id-тестоваястраничкаd2-Заголовок3"
+  >
+    <span
+      class="handy-header aui-icon aui-icon-small aui-iconfont-link"
+      title="Copy link"
+    ></span
+    >Заголовок 3
+  </h2>
+  <p>
+    <span
+      class="conf-macro output-inline"
+      data-hasbody="true"
+      data-macro-name="d2"
+    >
+    </span>
+  </p>
+  <div class="d2-macro">
+    <div class="d2-code" style="display: none">a -&amp;gt; c</div>
+    <div
+      class="d2-diagram"
+      style="text-align: center; padding: 10px; display: block"
+    >
+      <div
+        id="svg-container-d2-7jnmme3ab"
+        style="
+          overflow: hidden;
+          max-width: 100%;
+          cursor: grab;
+          user-select: none;
+          border: 1px solid rgb(224, 224, 224);
+          border-radius: 4px;
+          box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px;
+        "
+      >
+        <!--?xml version="1.0" encoding="utf-8"?--><svg
+          xmlns="http://www.w3.org/2000/svg"
+          xmlns:xlink="http://www.w3.org/1999/xlink"
+          data-d2-version="v0.7.1"
+          preserveAspectRatio="xMinYMin meet"
+          viewBox="0 0 255 404"
+          width="204"
+          height="324"
+          style="
+            transform-origin: left top 0px;
+            transform: scale(1) translate(0px);
+          "
+        >
+          <svg
+            class="d2-3221274818 d2-svg"
+            width="255"
+            height="404"
+            viewBox="-89 -89 255 404"
+          >
+            <rect
+              x="-89.000000"
+              y="-89.000000"
+              width="255.000000"
+              height="404.000000"
+              rx="0.000000"
+              fill="#FFFFFF"
+              class="fill-N7"
+              stroke-width="0"
+            ></rect>
+            <style type="text/css">
+              .d2-3221274818 .text-bold {
+                font-family: "d2-3221274818-font-bold";
+              }
+              @font-face {
+                font-family: d2-3221274818-font-bold;
+                src: url("data:application/font-woff;base64,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");
+              }
+            </style>
+            <style type="text/css">
+              .shape {
+                shape-rendering: geometricPrecision;
+                stroke-linejoin: round;
+              }
+              .connection {
+                stroke-linecap: round;
+                stroke-linejoin: round;
+              }
+              .blend {
+                mix-blend-mode: multiply;
+                opacity: 0.5;
+              }
+              .d2-3221274818 .fill-N1 {
+                fill: #0a0f25;
+              }
+              .d2-3221274818 .fill-N2 {
+                fill: #676c7e;
+              }
+              .d2-3221274818 .fill-N3 {
+                fill: #9499ab;
+              }
+              .d2-3221274818 .fill-N4 {
+                fill: #cfd2dd;
+              }
+              .d2-3221274818 .fill-N5 {
+                fill: #dee1eb;
+              }
+              .d2-3221274818 .fill-N6 {
+                fill: #eef1f8;
+              }
+              .d2-3221274818 .fill-N7 {
+                fill: #ffffff;
+              }
+              .d2-3221274818 .fill-B1 {
+                fill: #0a0f25;
+              }
+              .d2-3221274818 .fill-B2 {
+                fill: #676c7e;
+              }
+              .d2-3221274818 .fill-B3 {
+                fill: #9499ab;
+              }
+              .d2-3221274818 .fill-B4 {
+                fill: #cfd2dd;
+              }
+              .d2-3221274818 .fill-B5 {
+                fill: #dee1eb;
+              }
+              .d2-3221274818 .fill-B6 {
+                fill: #eef1f8;
+              }
+              .d2-3221274818 .fill-AA2 {
+                fill: #676c7e;
+              }
+              .d2-3221274818 .fill-AA4 {
+                fill: #cfd2dd;
+              }
+              .d2-3221274818 .fill-AA5 {
+                fill: #dee1eb;
+              }
+              .d2-3221274818 .fill-AB4 {
+                fill: #cfd2dd;
+              }
+              .d2-3221274818 .fill-AB5 {
+                fill: #dee1eb;
+              }
+              .d2-3221274818 .stroke-N1 {
+                stroke: #0a0f25;
+              }
+              .d2-3221274818 .stroke-N2 {
+                stroke: #676c7e;
+              }
+              .d2-3221274818 .stroke-N3 {
+                stroke: #9499ab;
+              }
+              .d2-3221274818 .stroke-N4 {
+                stroke: #cfd2dd;
+              }
+              .d2-3221274818 .stroke-N5 {
+                stroke: #dee1eb;
+              }
+              .d2-3221274818 .stroke-N6 {
+                stroke: #eef1f8;
+              }
+              .d2-3221274818 .stroke-N7 {
+                stroke: #ffffff;
+              }
+              .d2-3221274818 .stroke-B1 {
+                stroke: #0a0f25;
+              }
+              .d2-3221274818 .stroke-B2 {
+                stroke: #676c7e;
+              }
+              .d2-3221274818 .stroke-B3 {
+                stroke: #9499ab;
+              }
+              .d2-3221274818 .stroke-B4 {
+                stroke: #cfd2dd;
+              }
+              .d2-3221274818 .stroke-B5 {
+                stroke: #dee1eb;
+              }
+              .d2-3221274818 .stroke-B6 {
+                stroke: #eef1f8;
+              }
+              .d2-3221274818 .stroke-AA2 {
+                stroke: #676c7e;
+              }
+              .d2-3221274818 .stroke-AA4 {
+                stroke: #cfd2dd;
+              }
+              .d2-3221274818 .stroke-AA5 {
+                stroke: #dee1eb;
+              }
+              .d2-3221274818 .stroke-AB4 {
+                stroke: #cfd2dd;
+              }
+              .d2-3221274818 .stroke-AB5 {
+                stroke: #dee1eb;
+              }
+              .d2-3221274818 .background-color-N1 {
+                background-color: #0a0f25;
+              }
+              .d2-3221274818 .background-color-N2 {
+                background-color: #676c7e;
+              }
+              .d2-3221274818 .background-color-N3 {
+                background-color: #9499ab;
+              }
+              .d2-3221274818 .background-color-N4 {
+                background-color: #cfd2dd;
+              }
+              .d2-3221274818 .background-color-N5 {
+                background-color: #dee1eb;
+              }
+              .d2-3221274818 .background-color-N6 {
+                background-color: #eef1f8;
+              }
+              .d2-3221274818 .background-color-N7 {
+                background-color: #ffffff;
+              }
+              .d2-3221274818 .background-color-B1 {
+                background-color: #0a0f25;
+              }
+              .d2-3221274818 .background-color-B2 {
+                background-color: #676c7e;
+              }
+              .d2-3221274818 .background-color-B3 {
+                background-color: #9499ab;
+              }
+              .d2-3221274818 .background-color-B4 {
+                background-color: #cfd2dd;
+              }
+              .d2-3221274818 .background-color-B5 {
+                background-color: #dee1eb;
+              }
+              .d2-3221274818 .background-color-B6 {
+                background-color: #eef1f8;
+              }
+              .d2-3221274818 .background-color-AA2 {
+                background-color: #676c7e;
+              }
+              .d2-3221274818 .background-color-AA4 {
+                background-color: #cfd2dd;
+              }
+              .d2-3221274818 .background-color-AA5 {
+                background-color: #dee1eb;
+              }
+              .d2-3221274818 .background-color-AB4 {
+                background-color: #cfd2dd;
+              }
+              .d2-3221274818 .background-color-AB5 {
+                background-color: #dee1eb;
+              }
+              .d2-3221274818 .color-N1 {
+                color: #0a0f25;
+              }
+              .d2-3221274818 .color-N2 {
+                color: #676c7e;
+              }
+              .d2-3221274818 .color-N3 {
+                color: #9499ab;
+              }
+              .d2-3221274818 .color-N4 {
+                color: #cfd2dd;
+              }
+              .d2-3221274818 .color-N5 {
+                color: #dee1eb;
+              }
+              .d2-3221274818 .color-N6 {
+                color: #eef1f8;
+              }
+              .d2-3221274818 .color-N7 {
+                color: #ffffff;
+              }
+              .d2-3221274818 .color-B1 {
+                color: #0a0f25;
+              }
+              .d2-3221274818 .color-B2 {
+                color: #676c7e;
+              }
+              .d2-3221274818 .color-B3 {
+                color: #9499ab;
+              }
+              .d2-3221274818 .color-B4 {
+                color: #cfd2dd;
+              }
+              .d2-3221274818 .color-B5 {
+                color: #dee1eb;
+              }
+              .d2-3221274818 .color-B6 {
+                color: #eef1f8;
+              }
+              .d2-3221274818 .color-AA2 {
+                color: #676c7e;
+              }
+              .d2-3221274818 .color-AA4 {
+                color: #cfd2dd;
+              }
+              .d2-3221274818 .color-AA5 {
+                color: #dee1eb;
+              }
+              .d2-3221274818 .color-AB4 {
+                color: #cfd2dd;
+              }
+              .d2-3221274818 .color-AB5 {
+                color: #dee1eb;
+              }
+              .appendix text.text {
+                fill: #0a0f25;
+              }
+              .md {
+                --color-fg-default: #0a0f25;
+                --color-fg-muted: #676c7e;
+                --color-fg-subtle: #9499ab;
+                --color-canvas-default: #ffffff;
+                --color-canvas-subtle: #eef1f8;
+                --color-border-default: #0a0f25;
+                --color-border-muted: #676c7e;
+                --color-neutral-muted: #eef1f8;
+                --color-accent-fg: #676c7e;
+                --color-accent-emphasis: #676c7e;
+                --color-attention-subtle: #676c7e;
+                --color-danger-fg: red;
+              }
+              .sketch-overlay-B1 {
+                fill: url(#streaks-darker-d2-3221274818);
+                mix-blend-mode: lighten;
+              }
+              .sketch-overlay-B2 {
+                fill: url(#streaks-dark-d2-3221274818);
+                mix-blend-mode: overlay;
+              }
+              .sketch-overlay-B3 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-B4 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-B5 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-B6 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-AA2 {
+                fill: url(#streaks-dark-d2-3221274818);
+                mix-blend-mode: overlay;
+              }
+              .sketch-overlay-AA4 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-AA5 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-AB4 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-AB5 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-N1 {
+                fill: url(#streaks-darker-d2-3221274818);
+                mix-blend-mode: lighten;
+              }
+              .sketch-overlay-N2 {
+                fill: url(#streaks-dark-d2-3221274818);
+                mix-blend-mode: overlay;
+              }
+              .sketch-overlay-N3 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-N4 {
+                fill: url(#streaks-normal-d2-3221274818);
+                mix-blend-mode: color-burn;
+              }
+              .sketch-overlay-N5 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-N6 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .sketch-overlay-N7 {
+                fill: url(#streaks-bright-d2-3221274818);
+                mix-blend-mode: darken;
+              }
+              .light-code {
+                display: block;
+              }
+              .dark-code {
+                display: none;
+              }
+            </style>
+            <g class="YQ==">
+              <g class="shape">
+                <rect
+                  x="12.000000"
+                  y="12.000000"
+                  width="53.000000"
+                  height="66.000000"
+                  stroke="#0A0F25"
+                  fill="#EEF1F8"
+                  class="stroke-B1 fill-B6"
+                  style="stroke-width: 2"
+                ></rect>
+              </g>
+              <text
+                x="38.500000"
+                y="50.500000"
+                fill="#0A0F25"
+                class="text-bold fill-N1"
+                style="text-anchor: middle; font-size: 16px"
+              >
+                a
+              </text>
+            </g>
+            <g class="Yw==">
+              <g class="shape">
+                <rect
+                  x="12.000000"
+                  y="148.000000"
+                  width="53.000000"
+                  height="66.000000"
+                  stroke="#0A0F25"
+                  fill="#EEF1F8"
+                  class="stroke-B1 fill-B6"
+                  style="stroke-width: 2"
+                ></rect>
+              </g>
+              <text
+                x="38.500000"
+                y="186.500000"
+                fill="#0A0F25"
+                class="text-bold fill-N1"
+                style="text-anchor: middle; font-size: 16px"
+              >
+                c
+              </text>
+            </g>
+            <g class="KGEgLSZndDsgYylbMF0=">
+              <marker
+                id="mk-d2-3221274818-3488378134"
+                markerWidth="10.000000"
+                markerHeight="12.000000"
+                refX="7.000000"
+                refY="6.000000"
+                viewBox="0.000000 0.000000 10.000000 12.000000"
+                orient="auto"
+                markerUnits="userSpaceOnUse"
+              >
+                <polygon
+                  points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000"
+                  fill="#0A0F25"
+                  class="connection fill-B1"
+                  stroke-width="2"
+                ></polygon>
+              </marker>
+              <path
+                d="M 38.500000 80.000000 L 38.500000 144.000000"
+                stroke="#0A0F25"
+                fill="none"
+                class="connection stroke-B1"
+                style="stroke-width: 2"
+                marker-end="url(#mk-d2-3221274818-3488378134)"
+                mask="url(#d2-3221274818)"
+              ></path>
+            </g>
+            <mask
+              id="d2-3221274818"
+              maskUnits="userSpaceOnUse"
+              x="-89"
+              y="-89"
+              width="255"
+              height="404"
+            >
+              <rect
+                x="-89"
+                y="-89"
+                width="255"
+                height="404"
+                fill="white"
+              ></rect>
+            </mask>
+          </svg>
+        </svg>
+      </div>
+    </div>
+    <div
+      class="d2-controls"
+      style="text-align: center; margin-top: 10px; display: block"
+    >
+      <div
+        style="
+          margin-bottom: 10px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+        "
+      >
+        <button
+          class="d2-btn toggle-diagram"
+          style="background: rgb(245, 245, 245)"
+        >
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+            ></path>
+          </svg>
+          toggle
+        </button>
+        <button class="d2-btn download-svg">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"
+            ></path>
+          </svg>
+          SVG
+        </button>
+        <button class="d2-btn download-png">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z"
+            ></path>
+          </svg>
+          PNG
+        </button>
+        <button class="d2-btn zoom-in">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm2.5-4h-2v2H9v-2H7V9h2V7h1v2h2v1z"
+            ></path>
+          </svg>
+        </button>
+        <button class="d2-btn zoom-out">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM7 9h5v1H7z"
+            ></path>
+          </svg>
+        </button>
+        <button class="d2-btn zoom-reset">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+            ></path>
+          </svg>
+        </button>
+        <span class="d2-status zoom-level">100%</span>
+      </div>
+      <div class="d2-status">
+        Theme: 1 | Layout: elk | Direction: down | Sketch: false | Scale: 0.8
+      </div>
+    </div>
+    <script>
+      //<![CDATA[      (function () {        // Utility functions        async function calculateHash(d2Code, params) {          try {            const data = d2Code + JSON.stringify(params);            const hashBuffer = await crypto.subtle.digest(              "SHA-256",              new TextEncoder().encode(data),            );            const hashArray = Array.from(new Uint8Array(hashBuffer));            return hashArray              .map((b) => b.toString(16).padStart(2, "0"))              .join("");          } catch (e) {            console.warn("SHA-256 not available, using fallback hash:", e);            let hash = 0;            const str = d2Code + JSON.stringify(params);            for (let i = 0; i < str.length; i++) {              const char = str.charCodeAt(i);              hash = (hash << 5) - hash + char;              hash = hash & hash;            }            return Math.abs(hash).toString(16);          }        }        // IndexedDB helpers        function openCacheDB() {          return new Promise((resolve, reject) => {            const request = indexedDB.open("d2-cache", 1);            request.onupgradeneeded = (event) => {              const db = event.target.result;              if (!db.objectStoreNames.contains("diagrams")) {                db.createObjectStore("diagrams", { keyPath: "hash" });              }            };            request.onsuccess = (event) => resolve(event.target.result);            request.onerror = (event) => reject(event.target.error);          });        }        async function getCachedDiagram(hash) {          const db = await openCacheDB();          return new Promise((resolve, reject) => {            const transaction = db.transaction(["diagrams"], "readonly");            const store = transaction.objectStore("diagrams");            const request = store.get(hash);            request.onsuccess = (event) => resolve(event.target.result);            request.onerror = (event) => reject(event.target.error);          });        }        async function setCachedDiagram(hash, result, format) {          const db = await openCacheDB();          return new Promise((resolve, reject) => {            const transaction = db.transaction(["diagrams"], "readwrite");            const store = transaction.objectStore("diagrams");            const item = { hash, result, format, timestamp: Date.now() };            const request = store.put(item);            request.onsuccess = () => resolve();            request.onerror = (event) => reject(event.target.error);          });        }        // Render diagram        async function renderDiagram(          result,          format,          containerId,          d2Code,          params,          macroDiv,        ) {          const diagramDiv = macroDiv.querySelector(".d2-diagram");          const controlsDiv = macroDiv.querySelector(".d2-controls");          controlsDiv.style.display = "block";          const diagramVisibleKey = "diagram-visible-" + containerId;          const savedVisible =            localStorage.getItem(diagramVisibleKey) !== "false";          diagramDiv.style.display = savedVisible ? "block" : "none";          if (format === "svg") {            let scale = 1;            let tx = 0,              ty = 0;            const zoomLevelSpan = macroDiv.querySelector(".zoom-level");            const svgContainer = document.createElement("div");            svgContainer.id = "svg-container-" + containerId;            svgContainer.style.overflow = "hidden";            svgContainer.style.maxWidth = "100%";            svgContainer.style.cursor = "grab";            svgContainer.style.userSelect = "none";            svgContainer.style.border = "1px solid #e0e0e0";            svgContainer.style.borderRadius = "4px";            svgContainer.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";            const responsiveSvg = result.replace(              /<svg([^>]*)>/,              '<svg$1 style="transform-origin: top left;">',            );            svgContainer.innerHTML = responsiveSvg;            diagramDiv.innerHTML = "";            diagramDiv.appendChild(svgContainer);            diagramDiv.style.display = savedVisible ? "block" : "none";            const svgElement = svgContainer.querySelector("svg");            // Restore pan zoom            const panZoomKey = "panzoom-" + containerId;            const saved = JSON.parse(localStorage.getItem(panZoomKey) || "{}");            scale = saved.scale || 1;            tx = saved.tx || 0;            ty = saved.ty || 0;            svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;            zoomLevelSpan.textContent = Math.round(scale * 100) + "%";            let isDragging = false;            let startX, startY;            svgContainer.onmousedown = function (e) {              isDragging = true;              startX = e.clientX - tx;              startY = e.clientY - ty;              svgContainer.style.cursor = "grabbing";              e.preventDefault();            };            svgContainer.onmousemove = function (e) {              if (isDragging) {                tx = e.clientX - startX;                ty = e.clientY - startY;                svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;                localStorage.setItem(                  panZoomKey,                  JSON.stringify({ tx, ty, scale }),                );              }            };            svgContainer.onmouseup = function () {              isDragging = false;              svgContainer.style.cursor = "grab";            };            svgContainer.onmouseleave = function () {              isDragging = false;              svgContainer.style.cursor = "grab";            };            macroDiv.querySelector(".zoom-in").onclick = function () {              scale *= 1.2;              svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;              zoomLevelSpan.textContent = Math.round(scale * 100) + "%";              localStorage.setItem(                panZoomKey,                JSON.stringify({ tx, ty, scale }),              );            };            macroDiv.querySelector(".zoom-out").onclick = function () {              scale /= 1.2;              svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;              zoomLevelSpan.textContent = Math.round(scale * 100) + "%";              localStorage.setItem(                panZoomKey,                JSON.stringify({ tx, ty, scale }),              );            };            macroDiv.querySelector(".zoom-reset").onclick = function () {              scale = 1;              tx = 0;              ty = 0;              svgElement.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;              zoomLevelSpan.textContent = "100%";              localStorage.setItem(                panZoomKey,                JSON.stringify({ tx, ty, scale }),              );            };            macroDiv.querySelector(".toggle-diagram").onclick = function () {              const isVisible = diagramDiv.style.display !== "none";              diagramDiv.style.display = isVisible ? "none" : "block";              localStorage.setItem(diagramVisibleKey, !isVisible);              const toggleBtn = macroDiv.querySelector(".toggle-diagram");              toggleBtn.style.background = !isVisible ? "#f5f5f5" : "#ccc";            };          } else {            const img = document.createElement("img");            img.src = URL.createObjectURL(result);            img.style.border = "1px solid #e0e0e0";            img.style.borderRadius = "4px";            img.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)";            diagramDiv.innerHTML = "";            diagramDiv.appendChild(img);            diagramDiv.style.display = savedVisible ? "block" : "none";            // For PNG, disable zoom buttons            macroDiv.querySelector(".zoom-in").style.display = "none";            macroDiv.querySelector(".zoom-out").style.display = "none";            macroDiv.querySelector(".zoom-reset").style.display = "none";            macroDiv.querySelector(".zoom-level").style.display = "none";            macroDiv.querySelector(".toggle-diagram").onclick = function () {              const isVisible = diagramDiv.style.display !== "none";              diagramDiv.style.display = isVisible ? "none" : "block";              localStorage.setItem(diagramVisibleKey, !isVisible);              const toggleBtn = macroDiv.querySelector(".toggle-diagram");              toggleBtn.style.background = !isVisible ? "#f5f5f5" : "#ccc";            };          }          const toggleBtn = macroDiv.querySelector(".toggle-diagram");          toggleBtn.style.background = savedVisible ? "#f5f5f5" : "#ccc";          // Setup download handlers          setupDownloadHandlers(            d2Code,            params,            format,            containerId,            result,            macroDiv,          );          // Setup download handlers          setupDownloadHandlers(            d2Code,            params,            format,            containerId,            result,            macroDiv,          );        }        // Fetch diagram        async function fetchDiagram(          d2Code,          params,          hash,          format,          containerId,          macroDiv,        ) {          const formData = new FormData();          formData.append("d2", d2Code);          formData.append("theme", params.theme);          formData.append("layout", params.layout);          formData.append("sketch", params.sketch);          formData.append("scale", params.scale);          if (params.preset) {            formData.append("preset", params.preset);          }          const response = await fetch(            "https://d2lang.phoenixit.ru/" + format,            {              method: "POST",              body: formData,            },          );          if (!response.ok) {            const text = await response.text();            throw new Error(text || "HTTP " + response.status);          }          const result =            format === "svg" ? await response.text() : await response.blob();          await setCachedDiagram(hash, result, format);          await renderDiagram(            result,            format,            containerId,            d2Code,            params,            macroDiv,          );        }        function setupDownloadHandlers(          d2Code,          params,          format,          containerId,          storedResult,          macroDiv,        ) {          macroDiv.querySelector(".download-svg").onclick = async function () {            if (format === "svg") {              const blob = new Blob([storedResult], { type: "image/svg+xml" });              const url = URL.createObjectURL(blob);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.svg";              a.click();              URL.revokeObjectURL(url);            } else {              // Fetch SVG on demand              const formDataSvg = new FormData();              formDataSvg.append("d2", d2Code);              formDataSvg.append("theme", params.theme);              formDataSvg.append("layout", params.layout);              formDataSvg.append("sketch", params.sketch);              formDataSvg.append("scale", params.scale);              if (params.preset) {                formDataSvg.append("preset", params.preset);              }              const res = await fetch("https://d2lang.phoenixit.ru/svg", {                method: "POST",                body: formDataSvg,              });              const svg = await res.text();              const blob = new Blob([svg], { type: "image/svg+xml" });              const url = URL.createObjectURL(blob);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.svg";              a.click();              URL.revokeObjectURL(url);            }          };          macroDiv.querySelector(".download-png").onclick = async function () {            if (format === "png") {              const url = URL.createObjectURL(storedResult);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.png";              a.click();              URL.revokeObjectURL(url);            } else {              // Fetch PNG on demand              const formDataPng = new FormData();              formDataPng.append("d2", d2Code);              formDataPng.append("theme", params.theme);              formDataPng.append("layout", params.layout);              formDataPng.append("sketch", params.sketch);              formDataPng.append("scale", params.scale);              if (params.preset) {                formDataPng.append("preset", params.preset);              }              const res = await fetch("https://d2lang.phoenixit.ru/png", {                method: "POST",                body: formDataPng,              });              const blob = await res.blob();              const url = URL.createObjectURL(blob);              const a = document.createElement("a");              a.href = url;              a.download = "diagram.png";              a.click();              URL.revokeObjectURL(url);            }          };        }        // Main function        async function initDiagram(macroDiv) {          console.log("Macro script loaded");          const containerId = "d2-" + Math.random().toString(36).substr(2, 9);          const diagramDiv = macroDiv.querySelector(".d2-diagram");          const d2CodeDiv = macroDiv.querySelector(".d2-code");          if (!diagramDiv || !d2CodeDiv) return;          const diagramVisibleKey = "diagram-visible-" + containerId;          const savedVisible =            localStorage.getItem(diagramVisibleKey) !== "false";          diagramDiv.style.display = savedVisible ? "block" : "none";          let d2Code = d2CodeDiv.textContent;          if ("down") {            d2Code = "direction: " + "down" + "\n" + d2Code;          }          if (!d2Code.trim()) {            diagramDiv.innerHTML =              '<div style="color: #d63031; padding: 20px;">❌ No D2 code found</div>';            return;          }          console.log("D2 code length:", d2Code.length);          const params = {            theme: "1",            layout: "elk",            sketch: "false",            scale: "0.8",            direction: "down",            preset: "",          };          const hash = await calculateHash(d2Code, params);          const cached = await getCachedDiagram(hash);          if (cached && cached.format === "svg") {            console.log("Using cached diagram");            await renderDiagram(              cached.result,              "svg",              containerId,              d2Code,              params,              macroDiv,            );          } else {            console.log("Fetching diagram");            await fetchDiagram(              d2Code,              params,              hash,              "svg",              containerId,              macroDiv,            );          }        }        // Find the macro div and initialize        const script = document.currentScript;        const macroDiv = script.parentElement;        if (macroDiv && macroDiv.classList.contains("d2-macro")) {          initDiagram(macroDiv).catch((e) => {            const diagramDiv = macroDiv.querySelector(".d2-diagram");            if (diagramDiv) {              diagramDiv.innerHTML =                '<div style="color: #d63031; padding: 20px;">❌ JS Error: ' +                e.message +                "</div>";            }          });        }      })();      //]]>
+    </script>
+  </div>
+  <style>
+    .d2-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.2s;
+    }
+    .d2-btn:hover {
+      background: #e0e0e0;
+    }
+    .d2-btn svg {
+      flex-shrink: 0;
+    }
+    .d2-status {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      margin-top: 5px;
+    }
+  </style>
+  <p></p>
+  <div
+    class="simple-translate-system-theme"
+    talk-marker="6"
+    talk-page-id="462329155"
+    talk-page-version="1"
+  >
+    <div talk-marker="7" talk-page-id="462329155" talk-page-version="1">
+      <div
+        class="simple-translate-button isShow"
+        style="height: 22px; width: 22px; top: 427px; left: 27px"
+        talk-marker="8"
+        talk-page-id="462329155"
+        talk-page-version="1"
+      >
+        <br talk-br="3" />
+      </div>
+      <div
+        class="simple-translate-panel"
+        style="
+          width: 300px;
+          height: 200px;
+          top: 0px;
+          left: 0px;
+          font-size: 13px;
+        "
+        talk-marker="9"
+        talk-page-id="462329155"
+        talk-page-version="1"
+      >
+        <div
+          class="simple-translate-result-wrapper"
+          style="overflow: hidden"
+          talk-marker="10"
+          talk-page-id="462329155"
+          talk-page-version="1"
+        >
+          <div
+            class="simple-translate-move"
+            talk-marker="11"
+            talk-page-id="462329155"
+            talk-page-version="1"
+          >
+            <br talk-br="4" />
+          </div>
+          <div
+            class="simple-translate-result-contents"
+            talk-marker="12"
+            talk-page-id="462329155"
+            talk-page-version="1"
+          >
+            <p
+              class="simple-translate-result"
+              talk-marker="13"
+              talk-page-id="462329155"
+              talk-page-version="1"
+            >
+              <br talk-br="5" />
+            </p>
+            <p
+              class="simple-translate-candidate"
+              talk-marker="14"
+              talk-page-id="462329155"
+              talk-page-version="1"
+            >
+              <br talk-br="6" />
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="likes-and-labels-container">
+  <div id="likes-section" class="no-print">
+    <a href="" class="like-button"
+      ><span class="aui-icon aui-icon-small aui-iconfont-like"></span
+      ><span class="like-button-text">Like</span></a
+    ><span class="like-summary like-summary-margin-left"
+      >Be the first to like this</span
+    >
+  </div>
+  <div id="labels-section" class="pageSection group">
+    <div
+      class="labels-section-content content-column"
+      entityid="462329155"
+      entitytype="page"
+    >
+      <div class="labels-content">
+        <ul class="label-list label-list-right has-pen">
+          <li class="no-labels-message">No labels</li>
+          <li class="labels-edit-container">
+            <a
+              href="#"
+              class="show-labels-editor"
+              title="Edit Labels (Type 'l')"
+            >
+              <span
+                class="aui-icon aui-icon-small aui-iconfont-devtools-tag-small"
+                >Edit Labels</span
+              >
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="comments-section" class="pageSection group">
+  <div class="bottom-comment-panels comment-panels">
+    <div class="quick-comment-container comment add">
+      <p class="comment-user-logo">
+        <a
+          class="userLogoLink userlink-0"
+          data-username="oveshchin"
+          href="/users/profile/editmyprofilepicture.action"
+          title=""
+          data-user-hover-bound="true"
+          ><img
+            class="userLogo logo defaultLogo"
+            src="/s/-lqnvx6/8804/47zayh/_/images/icons/profilepics/add_profile_pic.svg"
+            alt="User icon: Add a picture of yourself"
+            title=""
+        /></a>
+      </p>
+      <div class="quick-comment-body">
+        <div
+          class="quick-comment-loading-container"
+          style="display: none"
+        ></div>
+        <div id="editor-messages"></div>
+        <div id="any-messages"></div>
+        <form
+          style="display: block"
+          class="quick-comment-form aui"
+          method="post"
+          name="inlinecommentform"
+          action="/pages/doaddcomment.action?pageId=462329155"
+        >
+          <div
+            title="Add a Comment (Type 'm')"
+            role="button"
+            tabindex="0"
+            aria-label="Add a Comment"
+            class="quick-comment-prompt"
+          >
+            <span>Write a comment...</span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div id="comments-actions" class="aui-toolbar noprint" style="display: none">
+    <p class="toolbar-group">
+      <span class="toolbar-item"
+        ><a
+          href="/pages/viewpage.action?pageId=462329155&amp;showComments=true&amp;showCommentArea=true#addcomment"
+          id="add-comment-rte"
+          accesskey="m"
+          class="toolbar-trigger"
+          >Add Comment</a
+        ></span
+      >
+    </p>
+  </div>
+</div>
