@@ -71,7 +71,7 @@ describe('renderSvg', () => {
     expect(call[0]).toBe('https://d2.test/svg');
     expect(call[1]?.method).toBe('POST');
 
-    const body = call[1]?.body as FormData;
+    const body = new URLSearchParams(call[1]?.body as string);
     expect(body.get('d2')).toBe('x -> y');
     expect(body.get('theme')).toBe('3');
     expect(body.get('layout')).toBe('dagre');
@@ -84,7 +84,7 @@ describe('renderSvg', () => {
 
     await renderSvg('https://d2.test', 'a -> b', { theme: '', layout: undefined });
 
-    const body = vi.mocked(fetch).mock.calls[0][1]?.body as FormData;
+    const body = new URLSearchParams(vi.mocked(fetch).mock.calls[0][1]?.body as string);
     expect(body.get('d2')).toBe('a -> b');
     expect(body.get('theme')).toBeNull();
     expect(body.get('layout')).toBeNull();
@@ -136,7 +136,7 @@ describe('formatD2', () => {
     const call = vi.mocked(fetch).mock.calls[0];
     expect(call[0]).toBe('https://d2.test/format');
 
-    const body = call[1]?.body as FormData;
+    const body = new URLSearchParams(call[1]?.body as string);
     expect(body.get('d2')).toBe('a->b');
   });
 
