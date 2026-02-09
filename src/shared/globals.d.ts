@@ -1,5 +1,7 @@
 /**
- * Chrome 144+ and Firefox both expose a Promise-based `browser.*` namespace.
- * We reuse the @types/chrome definitions for the type shape.
+ * The `browser` global is available natively in Firefox MV3.
+ * For Chrome MV3, a build-time polyfill (esbuild banner) aliases
+ * `globalThis.browser = chrome`, so all code can use `browser.*` uniformly.
+ * Type shape comes from @types/chrome.
  */
 declare const browser: typeof chrome;

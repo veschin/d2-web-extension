@@ -5,6 +5,10 @@ const target = process.env.BUILD_TARGET || 'chrome';
 const watch = process.env.WATCH === '1';
 const outdir = `dist-${target}`;
 
+// Polyfill: Chrome MV3 has `chrome.*`, Firefox MV3 has `browser.*`.
+// Alias browser → chrome so all code can use `browser.*` uniformly.
+const browserPolyfill = `if(typeof globalThis.browser==="undefined"){globalThis.browser=chrome;}`;
+
 const shared = {
   bundle: true,
   platform: 'browser',
@@ -14,6 +18,7 @@ const shared = {
   define: {
     'process.env.BUILD_TARGET': JSON.stringify(target),
   },
+  banner: { js: browserPolyfill },
   external: ['fs/promises', 'module'],
 };
 
