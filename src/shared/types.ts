@@ -9,6 +9,8 @@ export interface MacroInfo {
   params: MacroParams;
   /** Which page mode the macro was detected in */
   mode: 'view' | 'edit';
+  /** Cached SVG from page DOM (view mode only, for popup thumbnails) */
+  cachedSvg?: string;
 }
 
 export interface MacroParams {
@@ -53,6 +55,35 @@ export interface PageMeta {
   parentPageId: string;
 }
 
+/** Reference library: a configured source page per Confluence space */
+export interface ReferenceSource {
+  spaceKey: string;
+  pageTitle: string;
+  /** Optional: only use specific macro indices from the page */
+  macroIndices?: number[];
+}
+
+/** A single reusable D2 block extracted from a reference page */
+export interface ReferenceBlock {
+  name: string;
+  code: string;
+  /** Source page info */
+  sourcePageTitle: string;
+  sourceSpaceKey: string;
+  /** Index within the source macro */
+  blockIndex: number;
+  /** Macro index on the page */
+  macroIndex: number;
+}
+
+/** Cached reference data for a space */
+export interface ReferenceCache {
+  spaceKey: string;
+  blocks: ReferenceBlock[];
+  fetchedAt: number;
+  pageVersion: number;
+}
+
 /** Messages between content script ↔ service worker ↔ popup */
 export type ExtMessage =
   | { type: 'get-macros' }
@@ -61,4 +92,8 @@ export type ExtMessage =
   | { type: 'save-macro'; macroIndex: number; newCode: string }
   | { type: 'save-result'; success: boolean; error?: string }
   | { type: 'confluence-api'; method: string; url: string; body?: string }
-  | { type: 'confluence-api-result'; status: number; data: string };
+  | { type: 'confluence-api-result'; status: number; data: string }
+  | { type: 'get-references'; spaceKey: string }
+  | { type: 'refresh-references'; spaceKey: string }
+  | { type: 'get-reference-sources' }
+  | { type: 'set-reference-sources'; sources: ReferenceSource[] };
