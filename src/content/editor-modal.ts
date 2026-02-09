@@ -405,13 +405,32 @@ function toggleLibrary(_pageMeta: PageMeta) {
 /** Fetched macros from a reference page */
 let fetchedMacros: Array<{ index: number; code: string; firstLine: string }> = [];
 
+const LIBRARY_URL_KEY = 'd2ext-library-url';
+
 /** Wire up library panel event handlers */
 function wireLibrary() {
   const urlInput = q('#d2ext-library-url') as HTMLInputElement | null;
   const fetchBtn = q('#d2ext-library-fetch');
   if (!urlInput || !fetchBtn) return;
 
-  const doFetch = () => fetchUrlMacros(urlInput.value.trim());
+  // Restore last used URL from storage
+  browser.storage.local.get(LIBRARY_URL_KEY).then((result) => {
+    const saved = result[LIBRARY_URL_KEY] as string | undefined;
+    if (saved && urlInput) {
+      urlInput.value = saved;
+      // Auto-fetch if we had a saved URL
+      fetchUrlMacros(saved);
+    }
+  }).catch(() => {});
+
+  const doFetch = () => {
+    const url = urlInput.value.trim();
+    if (url) {
+      // Persist the URL
+      browser.storage.local.set({ [LIBRARY_URL_KEY]: url }).catch(() => {});
+    }
+    fetchUrlMacros(url);
+  };
 
   fetchBtn.addEventListener('click', doFetch);
   urlInput.addEventListener('keydown', (e) => {
