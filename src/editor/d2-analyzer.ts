@@ -6,6 +6,7 @@
 
 import type { Parser, Node as TSNode } from 'web-tree-sitter';
 import type { BlockMetadata } from '../shared/types';
+import { isD2Keyword } from '../shared/d2-keywords';
 
 /**
  * Analyze a D2 code block to extract semantic metadata.
@@ -136,21 +137,6 @@ function analyzeWithRegex(code: string): BlockMetadata {
     hasClasses,
     topIdentifiers,
   };
-}
-
-const D2_KEYWORD_SET = new Set([
-  'direction', 'shape', 'style', 'label', 'icon', 'near', 'tooltip',
-  'link', 'class', 'classes', 'constraint', 'width', 'height',
-  'grid-columns', 'grid-rows', 'grid-gap', 'vertical-gap', 'horizontal-gap',
-  'fill', 'stroke', 'stroke-width', 'stroke-dash', 'border-radius',
-  'shadow', 'opacity', 'bold', 'italic', 'underline', 'text-transform',
-  'double-border', 'multiple', '3d', 'animated', 'filled',
-  'source-arrowhead', 'target-arrowhead', 'font-size', 'font-color',
-  'top', 'left',
-]);
-
-function isD2Keyword(word: string): boolean {
-  return D2_KEYWORD_SET.has(word);
 }
 
 function categorizeBlock(

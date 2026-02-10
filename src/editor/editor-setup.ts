@@ -76,6 +76,26 @@ export async function createEditor(
 
   const readOnlyExt = callbacks.readOnly ? [EditorState.readOnly.of(true)] : [];
 
+  const dropHandlerExt = callbacks.readOnly ? [] : [EditorView.domEventHandlers({
+    drop(event, view) {
+      const code = event.dataTransfer?.getData('application/x-d2ext-block');
+      if (!code) return false;
+      event.preventDefault();
+      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+      if (pos === null) return false;
+      view.dispatch({ changes: { from: pos, insert: '\n' + code + '\n' } });
+      view.focus();
+      return true;
+    },
+    dragover(event) {
+      if (event.dataTransfer?.types.includes('application/x-d2ext-block')) {
+        event.preventDefault();
+        return true;
+      }
+      return false;
+    },
+  })];
+
   const view = new EditorView({
     parent: container,
     root,
@@ -87,6 +107,7 @@ export async function createEditor(
         ...lintExts,
         ...keymapExt,
         ...readOnlyExt,
+        ...dropHandlerExt,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             callbacks.onChange?.(update.state.doc.toString());

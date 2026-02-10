@@ -4,7 +4,7 @@ import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, savePage
 import { createEditor } from '../editor/editor-setup';
 import { setReferenceCompletions, initD2Parser } from '../editor/d2-language';
 import { analyzeD2Block } from '../editor/d2-analyzer';
-import { extractD2Blocks } from '../shared/d2-parser';
+import { extractD2Blocks, type D2Block } from '../shared/d2-parser';
 import type { EditorView } from '@codemirror/view';
 import type { Parser } from 'web-tree-sitter';
 import { logInfo, logWarn, logError, logTimed } from '../shared/logger';
@@ -677,14 +677,7 @@ async function fetchByUrl(url: string) {
       return {
         index: m.index,
         code: m.code,
-        blocks: blocks.map((b, bi) => ({
-          name: b.name,
-          code: b.code,
-          sourcePageTitle: pageTitle,
-          sourceSpaceKey: sourceKey,
-          blockIndex: bi,
-          macroIndex: m.index,
-        })),
+        blocks: blocks.map((b, bi) => mapD2BlockToRef(b, bi, pageTitle, sourceKey, m.index)),
       };
     });
 
@@ -727,15 +720,11 @@ async function renderLibraryMacros(source: ReferenceSource) {
         if (resp.error) throw new Error(resp.error);
         const macros: ReferenceMacro[] = resp.macros.map((m) => {
           const blocks = extractD2Blocks(m.code, d2Parser);
+          const pt = resp.pageTitle || source.pageTitle;
           return {
             index: m.index,
             code: m.code,
-            blocks: blocks.map((b, bi) => ({
-              name: b.name, code: b.code,
-              sourcePageTitle: resp.pageTitle || source.pageTitle,
-              sourceSpaceKey: source.spaceKey,
-              blockIndex: bi, macroIndex: m.index,
-            })),
+            blocks: blocks.map((b, bi) => mapD2BlockToRef(b, bi, pt, source.spaceKey, m.index)),
           };
         });
         data = { macros, pageTitle: resp.pageTitle || source.pageTitle };
@@ -818,42 +807,114 @@ function renderLibraryBlocks(source: ReferenceSource, macroIndex: number) {
     return;
   }
 
-  // Enrich blocks with metadata
-  const enriched: EnrichedBlock[] = macro.blocks.map((b) => ({
-    ...b,
-    metadata: getBlockMetadata(b.code),
-  }));
+  // Enrich blocks with metadata (recursively)
+  const enriched: EnrichedBlock[] = macro.blocks.map((b) => enrichBlock(b));
 
   contentEl.innerHTML = enriched.map((b, i) => renderBlockCard(b, i)).join('');
 
-  // Wire copy/insert buttons
-  contentEl.querySelectorAll('[data-blk-copy]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.getAttribute('data-blk-copy')!, 10);
-      navigator.clipboard.writeText(enriched[idx].code).catch(() => {});
-      setStatus('Copied to clipboard');
-      showToast('Copied');
-    });
-  });
-
-  contentEl.querySelectorAll('[data-blk-insert]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.getAttribute('data-blk-insert')!, 10);
-      insertAtCursor(enriched[idx].code);
-      setStatus(`Inserted "${enriched[idx].name}"`);
-      showToast(`Inserted "${enriched[idx].name}"`);
-    });
-  });
+  wireBlockCardEvents(contentEl, enriched);
 
   // Setup lazy thumbnail observer
   setupThumbnailObserver(enriched);
   renderLibraryBreadcrumb();
 }
 
+/** Enrich a ReferenceBlock with metadata, recursively including children */
+function enrichBlock(b: ReferenceBlock): EnrichedBlock {
+  const enriched: EnrichedBlock = {
+    ...b,
+    metadata: getBlockMetadata(b.code),
+  };
+  if (b.children && b.children.length > 0) {
+    enriched.children = b.children.map(c => enrichBlock(c));
+  }
+  return enriched;
+}
+
+/** Wire copy, insert, expand, and drag events on block cards */
+function wireBlockCardEvents(container: Element, blocks: EnrichedBlock[], depth = 0) {
+  container.querySelectorAll('[data-blk-copy]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.getAttribute('data-blk-copy')!, 10);
+      if (blocks[idx]) {
+        navigator.clipboard.writeText(blocks[idx].code).catch(() => {});
+        setStatus('Copied to clipboard');
+        showToast('Copied');
+      }
+    });
+  });
+
+  container.querySelectorAll('[data-blk-insert]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.getAttribute('data-blk-insert')!, 10);
+      if (blocks[idx]) {
+        insertAtCursor(blocks[idx].code);
+        setStatus(`Inserted "${blocks[idx].name}"`);
+        showToast(`Inserted "${blocks[idx].name}"`);
+      }
+    });
+  });
+
+  // Wire expand buttons
+  container.querySelectorAll('[data-blk-expand]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.getAttribute('data-blk-expand')!, 10);
+      const block = blocks[idx];
+      if (!block?.children || block.children.length === 0) return;
+
+      const childContainer = container.querySelector(`[data-children-of="${idx}"]`) as HTMLElement | null;
+      if (!childContainer) return;
+
+      const isExpanded = childContainer.style.display !== 'none';
+      if (isExpanded) {
+        childContainer.style.display = 'none';
+        (btn as HTMLElement).innerHTML = `&#9654; ${block.children.length}`;
+      } else {
+        childContainer.style.display = '';
+        (btn as HTMLElement).innerHTML = `&#9660; ${block.children.length}`;
+        // Lazy render children if not yet rendered
+        if (!childContainer.hasChildNodes()) {
+          const childEnriched = block.children as EnrichedBlock[];
+          const childDepth = depth + 1;
+          childContainer.innerHTML = childEnriched.map((c, ci) => renderBlockCard(c, ci, childDepth)).join('');
+          wireBlockCardEvents(childContainer, childEnriched, childDepth);
+        }
+      }
+    });
+  });
+
+  // Wire drag events
+  setupDragOnCards(container, blocks);
+}
+
+/** Setup drag events on draggable block cards within a container */
+function setupDragOnCards(container: Element, blocks: EnrichedBlock[]) {
+  container.querySelectorAll('.d2ext-lib-block-card[draggable="true"]').forEach((card) => {
+    const el = card as HTMLElement;
+    // Avoid double-binding
+    if (el.dataset.dragBound) return;
+    el.dataset.dragBound = '1';
+
+    el.addEventListener('dragstart', (e) => {
+      const idx = parseInt(el.getAttribute('data-blk-idx') ?? '', 10);
+      const block = blocks[idx];
+      if (!block || !e.dataTransfer) return;
+      e.dataTransfer.setData('application/x-d2ext-block', block.code);
+      e.dataTransfer.setData('text/plain', block.code);
+      e.dataTransfer.effectAllowed = 'copy';
+      el.classList.add('d2ext-dragging');
+    });
+    el.addEventListener('dragend', () => {
+      el.classList.remove('d2ext-dragging');
+    });
+  });
+}
+
 /** Render a single block card HTML */
-function renderBlockCard(block: EnrichedBlock, index: number): string {
+function renderBlockCard(block: EnrichedBlock, index: number, depth = 0): string {
   const meta = block.metadata;
   const badges: string[] = [];
   if (meta) {
@@ -865,14 +926,24 @@ function renderBlockCard(block: EnrichedBlock, index: number): string {
     if (meta.hasClasses) badges.push('<span class="d2ext-lib-badge">classes</span>');
   }
 
+  const hasChildren = block.children && block.children.length > 0;
+  const expandBtn = hasChildren
+    ? `<button class="d2ext-lib-expand-btn" data-blk-expand="${index}" title="Expand children">&#9654; ${block.children!.length}</button>`
+    : '';
+  const labelHtml = block.label
+    ? `<div class="d2ext-lib-block-label">${escapeHtml(block.label)}</div>`
+    : '';
+  const indent = depth > 0 ? ` style="margin-left:${depth * 16}px"` : '';
+
   return `
-    <div class="d2ext-lib-block-card" data-blk-idx="${index}">
+    <div class="d2ext-lib-block-card" data-blk-idx="${index}" draggable="true"${indent}>
       <div class="d2ext-lib-block-top">
         <div class="d2ext-lib-block-thumb" data-thumb-idx="${index}">
           <span class="d2ext-lib-block-thumb-ph">${ICONS.loader}</span>
         </div>
         <div class="d2ext-lib-block-info">
-          <div class="d2ext-lib-block-name" title="${escapeHtml(block.name)}">${escapeHtml(block.name)}</div>
+          <div class="d2ext-lib-block-name" title="${escapeHtml(block.name)}">${escapeHtml(block.name)}${expandBtn ? ' ' + expandBtn : ''}</div>
+          ${labelHtml}
           <div class="d2ext-lib-block-meta">${badges.join('')}</div>
         </div>
       </div>
@@ -880,6 +951,7 @@ function renderBlockCard(block: EnrichedBlock, index: number): string {
         <button class="d2ext-btn d2ext-btn-sm" data-blk-copy="${index}">Copy</button>
         <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" data-blk-insert="${index}">Insert</button>
       </div>
+      ${hasChildren ? `<div class="d2ext-lib-children" data-children-of="${index}" style="display:none"></div>` : ''}
     </div>`;
 }
 
@@ -976,26 +1048,34 @@ function fitThumbSvg(el: HTMLElement) {
   }
 }
 
-/** Search blocks across all loaded sources */
+/** Search blocks across all loaded sources (recursively including children) */
 function renderSearchResults(query: string) {
   const contentEl = q('#d2ext-lib-content');
   if (!contentEl) return;
 
   const results: EnrichedBlock[] = [];
+
+  function searchBlocks(blocks: ReferenceBlock[]) {
+    for (const block of blocks) {
+      const meta = getBlockMetadata(block.code);
+      const searchable = [
+        block.name,
+        block.label || '',
+        meta.category,
+        ...meta.topIdentifiers,
+        block.code.substring(0, 300),
+      ].join(' ').toLowerCase();
+      if (searchable.includes(query)) {
+        results.push(enrichBlock(block));
+      }
+      // Also search children recursively
+      if (block.children) searchBlocks(block.children);
+    }
+  }
+
   for (const [, data] of libraryMacroData) {
     for (const macro of data.macros) {
-      for (const block of macro.blocks) {
-        const meta = getBlockMetadata(block.code);
-        const searchable = [
-          block.name,
-          meta.category,
-          ...meta.topIdentifiers,
-          block.code.substring(0, 300),
-        ].join(' ').toLowerCase();
-        if (searchable.includes(query)) {
-          results.push({ ...block, metadata: meta });
-        }
-      }
+      searchBlocks(macro.blocks);
     }
   }
 
@@ -1006,24 +1086,7 @@ function renderSearchResults(query: string) {
 
   contentEl.innerHTML = results.map((b, i) => renderBlockCard(b, i)).join('');
 
-  // Wire buttons
-  contentEl.querySelectorAll('[data-blk-copy]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.getAttribute('data-blk-copy')!, 10);
-      navigator.clipboard.writeText(results[idx].code).catch(() => {});
-      setStatus('Copied to clipboard');
-    });
-  });
-  contentEl.querySelectorAll('[data-blk-insert]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const idx = parseInt(btn.getAttribute('data-blk-insert')!, 10);
-      insertAtCursor(results[idx].code);
-      setStatus(`Inserted "${results[idx].name}"`);
-    });
-  });
-
+  wireBlockCardEvents(contentEl, results);
   setupThumbnailObserver(results);
 }
 
@@ -1080,6 +1143,29 @@ function insertAtCursor(text: string) {
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/** Map a D2Block (from parser) to ReferenceBlock, recursively including children */
+function mapD2BlockToRef(
+  b: D2Block,
+  bi: number,
+  pageTitle: string,
+  sourceKey: string,
+  macroIndex: number,
+): ReferenceBlock {
+  const ref: ReferenceBlock = {
+    name: b.name,
+    code: b.code,
+    sourcePageTitle: pageTitle,
+    sourceSpaceKey: sourceKey,
+    blockIndex: bi,
+    macroIndex,
+  };
+  if (b.label) ref.label = b.label;
+  if (b.children && b.children.length > 0) {
+    ref.children = b.children.map((c, ci) => mapD2BlockToRef(c, ci, pageTitle, sourceKey, macroIndex));
+  }
+  return ref;
 }
 
 /** Render preview via d2server */
@@ -1790,9 +1876,46 @@ const MODAL_CSS = `
     border-radius: 4px;
     padding: 8px;
     margin-bottom: 6px;
+    cursor: grab;
   }
   .d2ext-lib-block-card:hover {
     border-color: #4a90d9;
+  }
+  .d2ext-lib-block-card.d2ext-dragging {
+    opacity: 0.5;
+  }
+  .d2ext-lib-block-label {
+    font-size: 11px;
+    color: #888;
+    font-style: italic;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .d2ext-lib-expand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: 1px solid #d0d0d0;
+    border-radius: 3px;
+    padding: 0 4px;
+    font-size: 9px;
+    color: #666;
+    cursor: pointer;
+    vertical-align: middle;
+    line-height: 16px;
+  }
+  .d2ext-lib-expand-btn:hover {
+    background: #eee;
+    border-color: #4a90d9;
+    color: #4a90d9;
+  }
+  .d2ext-lib-children {
+    margin-top: 6px;
+    padding-left: 4px;
+    border-left: 2px solid #e0e0e0;
   }
   .d2ext-lib-block-top {
     display: flex;

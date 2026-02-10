@@ -74,6 +74,10 @@ export interface ReferenceBlock {
   blockIndex: number;
   /** Macro index on the page */
   macroIndex: number;
+  /** Human-readable label extracted from D2 source */
+  label?: string;
+  /** Nested child blocks for containers */
+  children?: ReferenceBlock[];
 }
 
 /** Semantic metadata extracted from a D2 block via tree-sitter AST */
@@ -91,6 +95,7 @@ export interface BlockMetadata {
 export interface EnrichedBlock extends ReferenceBlock {
   metadata?: BlockMetadata;
   svgThumbnail?: string;
+  children?: EnrichedBlock[];
 }
 
 /** A macro with its parsed blocks, used for hierarchical library navigation */
