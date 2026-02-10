@@ -673,7 +673,7 @@ async function fetchByUrl(url: string) {
 
     // Convert to ReferenceMacro format with blocks
     const macros: ReferenceMacro[] = resp.macros.map((m) => {
-      const blocks = extractD2Blocks(m.code);
+      const blocks = extractD2Blocks(m.code, d2Parser);
       return {
         index: m.index,
         code: m.code,
@@ -726,7 +726,7 @@ async function renderLibraryMacros(source: ReferenceSource) {
         const resp = await fetchPageMacrosByUrl(url);
         if (resp.error) throw new Error(resp.error);
         const macros: ReferenceMacro[] = resp.macros.map((m) => {
-          const blocks = extractD2Blocks(m.code);
+          const blocks = extractD2Blocks(m.code, d2Parser);
           return {
             index: m.index,
             code: m.code,
