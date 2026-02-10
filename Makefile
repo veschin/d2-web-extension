@@ -1,4 +1,4 @@
-.PHONY: build firefox chrome clean dev lint package
+.PHONY: build firefox chrome clean dev lint package debug-chrome debug-firefox
 
 build: firefox
 
@@ -19,3 +19,9 @@ package:
 
 clean:
 	npm run clean
+
+debug-chrome:
+	xdg-open 'chrome://extensions/' 2>/dev/null || open 'chrome://extensions/' 2>/dev/null || echo 'chrome://extensions/'
+
+debug-firefox:
+	xdg-open 'about:debugging#/runtime/this-firefox' 2>/dev/null || open 'about:debugging#/runtime/this-firefox' 2>/dev/null || echo 'about:debugging#/runtime/this-firefox'

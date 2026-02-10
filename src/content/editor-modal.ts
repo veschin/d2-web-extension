@@ -4,6 +4,7 @@ import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, savePage
 import { createEditor } from '../editor/editor-setup';
 import { setReferenceCompletions, initD2Parser } from '../editor/d2-language';
 import { analyzeD2Block } from '../editor/d2-analyzer';
+import { extractD2Blocks } from '../shared/d2-parser';
 import type { EditorView } from '@codemirror/view';
 import type { Parser } from 'web-tree-sitter';
 import { logInfo, logWarn, logError, logTimed } from '../shared/logger';
@@ -571,16 +572,35 @@ function showAddSourceForm() {
   const form = document.createElement('div');
   form.className = 'd2ext-lib-source-form';
   form.innerHTML = `
-    <input type="text" class="d2ext-lib-input" placeholder="Space key (e.g. TEAM)" id="d2ext-lib-new-space" />
-    <input type="text" class="d2ext-lib-input" placeholder="Page title" id="d2ext-lib-new-title" />
-    <div class="d2ext-lib-form-actions">
-      <button class="d2ext-btn d2ext-btn-sm" id="d2ext-lib-cancel-src">Cancel</button>
-      <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" id="d2ext-lib-save-src">Add</button>
+    <div class="d2ext-lib-form-section">
+      <input type="text" class="d2ext-lib-input" placeholder="Paste Confluence page URL or page ID" id="d2ext-lib-new-url" />
+      <div class="d2ext-lib-form-actions">
+        <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" id="d2ext-lib-fetch-url">Fetch</button>
+      </div>
+    </div>
+    <div class="d2ext-lib-form-divider">or add by space key</div>
+    <div class="d2ext-lib-form-section">
+      <input type="text" class="d2ext-lib-input" placeholder="Space key (e.g. TEAM)" id="d2ext-lib-new-space" />
+      <input type="text" class="d2ext-lib-input" placeholder="Page title" id="d2ext-lib-new-title" />
+      <div class="d2ext-lib-form-actions">
+        <button class="d2ext-btn d2ext-btn-sm" id="d2ext-lib-cancel-src">Cancel</button>
+        <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" id="d2ext-lib-save-src">Add</button>
+      </div>
     </div>`;
   contentEl.appendChild(form);
 
-  const spaceInput = q('#d2ext-lib-new-space') as HTMLInputElement;
-  spaceInput?.focus();
+  const urlInput = q('#d2ext-lib-new-url') as HTMLInputElement;
+  urlInput?.focus();
+
+  // Fetch by URL
+  const doFetchUrl = () => {
+    const url = (q('#d2ext-lib-new-url') as HTMLInputElement)?.value.trim();
+    if (url) fetchByUrl(url);
+  };
+  q('#d2ext-lib-fetch-url')?.addEventListener('click', doFetchUrl);
+  urlInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doFetchUrl();
+  });
 
   q('#d2ext-lib-cancel-src')?.addEventListener('click', () => renderLibrarySources());
   q('#d2ext-lib-save-src')?.addEventListener('click', () => {
@@ -619,6 +639,62 @@ async function refreshSource(source: ReferenceSource) {
     renderLibraryMacros(source);
   }
   setStatus(`Refreshing ${source.pageTitle}...`);
+}
+
+/** Fetch macros from a Confluence page URL and navigate to the macros view */
+async function fetchByUrl(url: string) {
+  const contentEl = q('#d2ext-lib-content');
+  if (!contentEl) return;
+
+  contentEl.innerHTML = `<div class="d2ext-lib-loading">${ICONS.loader} Fetching page...</div>`;
+
+  try {
+    const resp: { macros?: Array<{ index: number; code: string; firstLine: string }>; pageTitle?: string; pageId?: string; error?: string } =
+      await browser.runtime.sendMessage({ type: 'fetch-url-macros', url });
+
+    if (resp?.error) {
+      contentEl.innerHTML = `<div class="d2ext-lib-empty">${escapeHtml(resp.error)}</div>`;
+      return;
+    }
+
+    const rawMacros = resp?.macros ?? [];
+    if (rawMacros.length === 0) {
+      contentEl.innerHTML = '<div class="d2ext-lib-empty">No D2 macros found on this page.</div>';
+      return;
+    }
+
+    const pageTitle = resp?.pageTitle ?? 'URL Import';
+    const sourceKey = `url:${resp?.pageId ?? url}`;
+
+    // Convert to ReferenceMacro format with blocks
+    const macros: ReferenceMacro[] = rawMacros.map((m) => {
+      const blocks = extractD2Blocks(m.code);
+      return {
+        index: m.index,
+        code: m.code,
+        blocks: blocks.map((b, bi) => ({
+          name: b.name,
+          code: b.code,
+          sourcePageTitle: pageTitle,
+          sourceSpaceKey: sourceKey,
+          blockIndex: bi,
+          macroIndex: m.index,
+        })),
+      };
+    });
+
+    libraryMacroData.set(sourceKey, { macros, pageTitle });
+    updateReferenceCompletions();
+
+    // Navigate to macros view with a synthetic source
+    currentLibSource = { spaceKey: sourceKey, pageTitle };
+    libraryView = 'macros';
+    renderLibraryBreadcrumb();
+    renderLibraryMacros(currentLibSource);
+    logInfo('editor', `Fetched ${macros.length} macros from URL: ${url}`);
+  } catch (e) {
+    contentEl.innerHTML = `<div class="d2ext-lib-empty">Failed to fetch: ${escapeHtml((e as Error).message)}</div>`;
+  }
 }
 
 /** Render macros list for a source */
@@ -1614,6 +1690,19 @@ const MODAL_CSS = `
     display: flex;
     gap: 4px;
     justify-content: flex-end;
+  }
+  .d2ext-lib-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .d2ext-lib-form-divider {
+    text-align: center;
+    font-size: 11px;
+    color: #888;
+    padding: 2px 0;
+    border-top: 1px solid #ddd;
+    margin-top: 2px;
   }
 
   /* Macro cards */
