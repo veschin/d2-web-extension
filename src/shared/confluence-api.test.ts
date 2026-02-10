@@ -61,6 +61,14 @@ c -> d]]></ac:plain-text-body></ac:structured-macro>`;
     expect(macros).toHaveLength(1);
     expect(macros[0].macroId).toBe('d2-id');
   });
+
+  it('handles macro-id before ac:name (reversed attribute order)', () => {
+    const storage = `<ac:structured-macro ac:macro-id="rev-id-123" ac:schema-version="1" ac:name="d2"><ac:plain-text-body><![CDATA[x -> y]]></ac:plain-text-body></ac:structured-macro>`;
+    const macros = parseStorageMacros(storage);
+    expect(macros).toHaveLength(1);
+    expect(macros[0].macroId).toBe('rev-id-123');
+    expect(macros[0].code).toBe('x -> y');
+  });
 });
 
 describe('replaceStorageMacroCode', () => {

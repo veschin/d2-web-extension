@@ -63,13 +63,15 @@ export function parseStorageMacros(
   storageValue: string
 ): Array<{ macroId: string; code: string; paramString: string }> {
   const macros: Array<{ macroId: string; code: string; paramString: string }> = [];
-  // Match each d2 structured-macro block
+  // Match d2 structured-macro blocks — attributes may appear in any order
   const macroRegex =
-    /<ac:structured-macro[^>]*ac:name="d2"[^>]*ac:macro-id="([^"]*)"[^>]*>([\s\S]*?)<\/ac:structured-macro>/g;
+    /<ac:structured-macro[^>]*ac:name="d2"[^>]*>([\s\S]*?)<\/ac:structured-macro>/g;
   let match;
   while ((match = macroRegex.exec(storageValue)) !== null) {
-    const macroId = match[1];
-    const inner = match[2];
+    const tag = match[0].slice(0, match[0].indexOf('>') + 1);
+    const macroIdMatch = tag.match(/ac:macro-id="([^"]*)"/);
+    const macroId = macroIdMatch ? macroIdMatch[1] : '';
+    const inner = match[1];
     // Extract CDATA content
     const cdataMatch = inner.match(
       /<ac:plain-text-body><!\[CDATA\[([\s\S]*?)\]\]><\/ac:plain-text-body>/
