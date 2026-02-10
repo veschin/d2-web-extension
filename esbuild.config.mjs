@@ -30,13 +30,14 @@ const contentBuild = {
   format: 'iife',
 };
 
-// Background + popup — ESM (loaded as modules)
+// Background + popup + standalone — ESM (loaded as modules)
 const pagesBuild = {
   ...shared,
   entryPoints: [
     'src/background/service-worker.ts',
     'src/popup/popup.ts',
     'src/options/options.ts',
+    'src/standalone/editor.ts',
   ],
   outdir,
   format: 'esm',
@@ -66,6 +67,9 @@ async function build() {
   cpSync('src/content/content.css', `${outdir}/content.css`);
   cpSync('src/options/options.html', `${outdir}/options.html`);
   cpSync('src/options/options.css', `${outdir}/options.css`);
+  mkdirSync(`${outdir}/standalone`, { recursive: true });
+  cpSync('src/standalone/editor.html', `${outdir}/standalone/editor.html`);
+  cpSync('src/standalone/editor.css', `${outdir}/standalone/editor.css`);
 
   try {
     cpSync('assets/icons', `${outdir}/assets/icons`, { recursive: true });

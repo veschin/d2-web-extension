@@ -1,3 +1,5 @@
+import type { MacroParams } from './types';
+
 export interface EditorPreferences {
   fontSize: number;
 }
@@ -82,6 +84,71 @@ export async function clearDraft(macroId: string): Promise<void> {
     const drafts: DraftMap = (result[DRAFT_KEY] as DraftMap) ?? {};
     delete drafts[macroId];
     await browser.storage.local.set({ [DRAFT_KEY]: drafts });
+  } catch {
+    // storage unavailable
+  }
+}
+
+// --- Standalone drafts (no TTL, for standalone editor) ---
+
+const STANDALONE_DRAFT_KEY = 'd2ext-standalone-drafts';
+
+export interface StandaloneDraft {
+  name: string;
+  code: string;
+  params: MacroParams;
+  createdAt: number;
+  updatedAt: number;
+}
+
+type StandaloneDraftMap = Record<string, StandaloneDraft>;
+
+export async function listStandaloneDrafts(): Promise<Array<{ id: string } & StandaloneDraft>> {
+  try {
+    const result = await browser.storage.local.get(STANDALONE_DRAFT_KEY);
+    const drafts: StandaloneDraftMap = (result[STANDALONE_DRAFT_KEY] as StandaloneDraftMap) ?? {};
+    return Object.entries(drafts)
+      .map(([id, draft]) => ({ id, ...draft }))
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  } catch {
+    return [];
+  }
+}
+
+export async function loadStandaloneDraft(id: string): Promise<StandaloneDraft | null> {
+  try {
+    const result = await browser.storage.local.get(STANDALONE_DRAFT_KEY);
+    const drafts: StandaloneDraftMap = (result[STANDALONE_DRAFT_KEY] as StandaloneDraftMap) ?? {};
+    return drafts[id] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveStandaloneDraft(id: string, draft: StandaloneDraft): Promise<void> {
+  try {
+    const result = await browser.storage.local.get(STANDALONE_DRAFT_KEY);
+    const drafts: StandaloneDraftMap = (result[STANDALONE_DRAFT_KEY] as StandaloneDraftMap) ?? {};
+    drafts[id] = draft;
+    // Soft limit 200: evict oldest
+    const entries = Object.entries(drafts);
+    if (entries.length > 200) {
+      entries.sort((a, b) => a[1].updatedAt - b[1].updatedAt);
+      const toRemove = entries.slice(0, entries.length - 200);
+      for (const [key] of toRemove) delete drafts[key];
+    }
+    await browser.storage.local.set({ [STANDALONE_DRAFT_KEY]: drafts });
+  } catch {
+    // storage unavailable
+  }
+}
+
+export async function deleteStandaloneDraft(id: string): Promise<void> {
+  try {
+    const result = await browser.storage.local.get(STANDALONE_DRAFT_KEY);
+    const drafts: StandaloneDraftMap = (result[STANDALONE_DRAFT_KEY] as StandaloneDraftMap) ?? {};
+    delete drafts[id];
+    await browser.storage.local.set({ [STANDALONE_DRAFT_KEY]: drafts });
   } catch {
     // storage unavailable
   }

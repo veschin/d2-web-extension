@@ -4,12 +4,14 @@
  */
 
 import { EditorView, keymap } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
+import { EditorState, Compartment } from '@codemirror/state';
 import { basicSetup } from 'codemirror';
 import { lintGutter } from '@codemirror/lint';
 import { d2Extensions, initD2Parser } from './d2-language';
 import { d2Linter } from './d2-linter';
 import type { Parser } from 'web-tree-sitter';
+
+const fontSizeCompartment = new Compartment();
 
 export interface EditorCallbacks {
   onSave?: () => void;
@@ -118,12 +120,23 @@ export async function createEditor(
           '.cm-scroller': { overflow: 'auto' },
           '.cm-content': {
             fontFamily: "'SF Mono', Monaco, 'Cascadia Code', 'Fira Code', monospace",
-            fontSize: '13px',
           },
         }),
+        fontSizeCompartment.of(EditorView.theme({
+          '.cm-content': { fontSize: '13px' },
+        })),
       ],
     }),
   });
 
   return view;
+}
+
+/** Update editor font size at runtime using a CM Compartment (survives re-renders) */
+export function setFontSize(view: EditorView, size: number) {
+  view.dispatch({
+    effects: fontSizeCompartment.reconfigure(
+      EditorView.theme({ '.cm-content': { fontSize: `${size}px` } })
+    ),
+  });
 }

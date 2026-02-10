@@ -1,15 +1,15 @@
-import type { MacroInfo, PageMeta, ReferenceSource, ReferenceBlock, ReferenceMacro, EnrichedBlock, BlockMetadata } from '../shared/types';
+import type { MacroInfo, MacroParams, PageMeta, ReferenceSource, ReferenceBlock, ReferenceMacro, EnrichedBlock, BlockMetadata } from '../shared/types';
+import { DEFAULT_PARAMS } from '../shared/types';
 import { renderSvg, formatD2, renderSvgWithFallback, resolveServerUrl, renderPng, checkServerReachable } from '../shared/d2-server';
 import { loadSettings } from '../shared/extension-settings';
-import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, savePage, fetchPageMacrosByUrl } from '../shared/confluence-api';
-import { createEditor } from '../editor/editor-setup';
+import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, replaceStorageMacroParams, savePage, fetchPageMacrosByUrl } from '../shared/confluence-api';
+import { createEditor, setFontSize } from '../editor/editor-setup';
 import { setReferenceCompletions, initD2Parser } from '../editor/d2-language';
 import { analyzeD2Block } from '../editor/d2-analyzer';
 import { extractD2Blocks, type D2Block } from '../shared/d2-parser';
 import type { EditorView } from '@codemirror/view';
 import type { Parser } from 'web-tree-sitter';
 import { logInfo, logWarn, logError, logTimed } from '../shared/logger';
-import { setStatusBarText } from './status-bar';
 import { loadEditorPrefs, saveEditorPrefs, saveDraft, loadDraft, clearDraft } from '../shared/editor-prefs';
 
 let hostEl: HTMLElement | null = null;
@@ -17,6 +17,7 @@ let shadow: ShadowRoot | null = null;
 let editorView: EditorView | null = null;
 let currentMacro: MacroInfo | null = null;
 let originalCode = '';
+let originalParams: MacroParams = { ...DEFAULT_PARAMS };
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let draftTimer: ReturnType<typeof setTimeout> | null = null;
 let previewEnabled = false;
@@ -87,6 +88,7 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
 
   currentMacro = macro;
   originalCode = macro.code;
+  originalParams = { ...macro.params };
 
   // Load user server URL from settings
   try {
@@ -136,8 +138,16 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
       <div class="d2ext-modal-body">
         <div class="d2ext-editor-pane" id="d2ext-editor-container"></div>
         <div class="d2ext-preview-pane" id="d2ext-preview-pane" style="display:none">
+          <div class="d2ext-preview-toolbar">
+            <button class="d2ext-btn d2ext-btn-sm" data-preview-action="zoom-in" title="Zoom in">+</button>
+            <button class="d2ext-btn d2ext-btn-sm" data-preview-action="zoom-out" title="Zoom out">&minus;</button>
+            <button class="d2ext-btn d2ext-btn-sm" data-preview-action="reset" title="Reset zoom">1:1</button>
+            <span class="d2ext-preview-zoom-label" id="d2ext-zoom-label">100%</span>
+          </div>
           <div class="d2ext-preview-content" id="d2ext-preview">
-            <div class="d2ext-preview-loading">${ICONS.loader} Loading...</div>
+            <div class="d2ext-preview-canvas" id="d2ext-preview-canvas">
+              <div class="d2ext-preview-loading">${ICONS.loader} Loading...</div>
+            </div>
           </div>
           <div class="d2ext-error-bar" id="d2ext-error" style="display:none"></div>
         </div>
@@ -236,6 +246,20 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
   overlay.querySelector('[data-action="zoom-in"]')?.addEventListener('click', () => changeFontSize(1));
   overlay.querySelector('[data-action="zoom-out"]')?.addEventListener('click', () => changeFontSize(-1));
 
+  // Preview zoom buttons
+  overlay.querySelector('[data-preview-action="zoom-in"]')?.addEventListener('click', () => {
+    previewZoom = Math.min(5, previewZoom + 0.25);
+    updatePreviewTransform();
+  });
+  overlay.querySelector('[data-preview-action="zoom-out"]')?.addEventListener('click', () => {
+    previewZoom = Math.max(0.1, previewZoom - 0.25);
+    updatePreviewTransform();
+  });
+  overlay.querySelector('[data-preview-action="reset"]')?.addEventListener('click', () => resetPreviewZoom());
+
+  // Init pan/zoom on preview
+  initPreviewZoomPan();
+
   // Export button + dropdown
   overlay.querySelector('[data-action="export"]')?.addEventListener('click', () => toggleExportDropdown());
   overlay.querySelector('[data-export="svg"]')?.addEventListener('click', () => { hideExportDropdown(); exportAsSvg(); });
@@ -281,11 +305,9 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
       getServerUrl: () => userServerUrl || currentMacro?.params.server || '',
     });
 
-    // Apply persisted font size
-    const content = shadow?.querySelector('.cm-content') as HTMLElement | null;
-    if (content && currentFontSize !== 13) {
-      content.style.fontSize = `${currentFontSize}px`;
-      editorView?.requestMeasure();
+    // Apply persisted font size via compartment
+    if (editorView && currentFontSize !== 13) {
+      setFontSize(editorView, currentFontSize);
     }
 
     // Check for unsaved draft
@@ -356,6 +378,9 @@ function closeEditor() {
   shadow = null;
   currentMacro = null;
   previewEnabled = false;
+  previewZoom = 1;
+  previewPanX = 0;
+  previewPanY = 0;
   libraryOpen = false;
   libraryInitialized = false;
   optionsOpen = false;
@@ -383,11 +408,7 @@ function togglePreview() {
 let currentFontSize = 13;
 function changeFontSize(delta: number) {
   currentFontSize = Math.max(8, Math.min(28, currentFontSize + delta));
-  const content = shadow?.querySelector('.cm-content') as HTMLElement | null;
-  if (content) {
-    content.style.fontSize = `${currentFontSize}px`;
-    editorView?.requestMeasure();
-  }
+  if (editorView) setFontSize(editorView, currentFontSize);
   saveEditorPrefs({ fontSize: currentFontSize });
 }
 
@@ -1219,6 +1240,69 @@ function mapD2BlockToRef(
   return ref;
 }
 
+// --- Preview zoom/pan state ---
+let previewZoom = 1;
+let previewPanX = 0;
+let previewPanY = 0;
+let isPanning = false;
+let panStartX = 0;
+let panStartY = 0;
+
+function updatePreviewTransform() {
+  const canvas = q('#d2ext-preview-canvas') as HTMLElement | null;
+  if (canvas) canvas.style.transform = `translate(${previewPanX}px, ${previewPanY}px) scale(${previewZoom})`;
+  const label = q('#d2ext-zoom-label');
+  if (label) label.textContent = `${Math.round(previewZoom * 100)}%`;
+}
+
+function resetPreviewZoom() {
+  previewZoom = 1;
+  previewPanX = 0;
+  previewPanY = 0;
+  updatePreviewTransform();
+}
+
+function initPreviewZoomPan() {
+  const previewContent = q('#d2ext-preview');
+  if (!previewContent) return;
+
+  // Wheel zoom
+  previewContent.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    previewZoom = Math.max(0.1, Math.min(5, previewZoom + delta));
+    updatePreviewTransform();
+  }, { passive: false });
+
+  // Pan via middle mouse or Ctrl+left mouse
+  previewContent.addEventListener('mousedown', (e) => {
+    if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
+      e.preventDefault();
+      isPanning = true;
+      panStartX = e.clientX - previewPanX;
+      panStartY = e.clientY - previewPanY;
+      previewContent.style.cursor = 'grabbing';
+    }
+  });
+
+  previewContent.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    previewPanX = e.clientX - panStartX;
+    previewPanY = e.clientY - panStartY;
+    updatePreviewTransform();
+  });
+
+  const stopPan = () => {
+    if (isPanning) {
+      isPanning = false;
+      const pc = q('#d2ext-preview');
+      if (pc) pc.style.cursor = '';
+    }
+  };
+  previewContent.addEventListener('mouseup', stopPan);
+  previewContent.addEventListener('mouseleave', stopPan);
+}
+
 /** Render preview via d2server with fallback */
 let previewInFlight = false;
 async function doPreview() {
@@ -1230,11 +1314,11 @@ async function doPreview() {
   const code = getEditorCode();
   const macroServerUrl = currentMacro.params.server;
 
-  const previewEl = q('#d2ext-preview');
-  if (!previewEl) { previewInFlight = false; return; }
+  const canvasEl = q('#d2ext-preview-canvas');
+  if (!canvasEl) { previewInFlight = false; return; }
 
   if (!userServerUrl && !macroServerUrl) {
-    previewEl.innerHTML = '<div class="d2ext-preview-empty">No D2 server URL detected.<br>Check macro configuration or set a custom server in settings.</div>';
+    canvasEl.innerHTML = '<div class="d2ext-preview-empty">No D2 server URL detected.<br>Check macro configuration or set a custom server in settings.</div>';
     setStatus('Preview: no server URL');
     logWarn('preview', 'No D2 server URL detected');
     previewInFlight = false;
@@ -1242,7 +1326,7 @@ async function doPreview() {
   }
 
   // Show loading spinner
-  previewEl.innerHTML = `<div class="d2ext-preview-loading">${ICONS.loader} Rendering...</div>`;
+  canvasEl.innerHTML = `<div class="d2ext-preview-loading">${ICONS.loader} Rendering...</div>`;
   setStatus('Rendering...');
   hideError();
 
@@ -1251,12 +1335,12 @@ async function doPreview() {
 
     if (error) {
       showError(error);
-      previewEl.innerHTML = `<div class="d2ext-preview-empty">Render error. See error bar below.</div>`;
+      canvasEl.innerHTML = `<div class="d2ext-preview-empty">Render error. See error bar below.</div>`;
       setStatus('Preview error');
       logError('preview', 'Render failed', { error });
     } else if (svg) {
-      previewEl.innerHTML = svg;
-      const svgEl = previewEl.querySelector('svg');
+      canvasEl.innerHTML = svg;
+      const svgEl = canvasEl.querySelector('svg');
       if (svgEl) {
         svgEl.style.maxWidth = '100%';
         svgEl.style.height = 'auto';
@@ -1264,14 +1348,14 @@ async function doPreview() {
       const isUser = usedServer === userServerUrl && userServerUrl !== '';
       setStatus(`Preview updated (${isUser ? 'user' : 'macro'} server)`);
     } else {
-      previewEl.innerHTML = '<div class="d2ext-preview-empty">Empty response from server.</div>';
+      canvasEl.innerHTML = '<div class="d2ext-preview-empty">Empty response from server.</div>';
       setStatus('Preview: empty response');
       logWarn('preview', 'Empty SVG response from server');
     }
   } catch (e) {
     const msg = (e as Error).message;
     showError(`Preview failed: ${msg}`);
-    previewEl.innerHTML = `<div class="d2ext-preview-empty">Preview failed: ${escapeHtml(msg)}</div>`;
+    canvasEl.innerHTML = `<div class="d2ext-preview-empty">Preview failed: ${escapeHtml(msg)}</div>`;
     setStatus('Preview error');
     logError('preview', `Preview exception: ${msg}`);
   } finally {
@@ -1309,19 +1393,27 @@ async function doFormat() {
   }
 }
 
+/** Check if macro params have changed from original */
+function paramsChanged(): boolean {
+  if (!currentMacro) return false;
+  return (Object.keys(currentMacro.params) as (keyof MacroParams)[]).some(
+    (k) => currentMacro!.params[k] !== originalParams[k]
+  );
+}
+
 /** Save the edited code back to Confluence */
 async function doSave(pageMeta: PageMeta) {
   logInfo('save', `doSave: view=${!!editorView} macro=${!!currentMacro} macroId=${currentMacro?.macroId ?? 'N/A'}`);
   if (!editorView || !currentMacro) return;
 
   const newCode = getEditorCode();
-  if (newCode === originalCode) {
+  const hasParamChanges = paramsChanged();
+  if (newCode === originalCode && !hasParamChanges) {
     setStatus('No changes to save');
     return;
   }
 
   setStatus('Saving...');
-  setStatusBarText('Saving...', 'progress');
 
   if (currentMacro.mode === 'edit') {
     saveEditMode(newCode);
@@ -1344,18 +1436,28 @@ function saveEditMode(newCode: string) {
   const pre = element.querySelector('td.wysiwyg-macro-body pre');
   if (pre) {
     pre.textContent = newCode;
+
+    // Update data-macro-parameters if params changed
+    if (paramsChanged()) {
+      const paramStr = (Object.keys(currentMacro.params) as (keyof MacroParams)[])
+        .filter((k) => currentMacro!.params[k] !== '')
+        .map((k) => `${k}=${currentMacro!.params[k]}`)
+        .join('|');
+      element.setAttribute('data-macro-parameters', paramStr);
+      originalParams = { ...currentMacro.params };
+      logInfo('save', 'Updated data-macro-parameters on TinyMCE element');
+    }
+
     const event = new Event('input', { bubbles: true });
     pre.dispatchEvent(event);
     originalCode = newCode;
     updateMacroCode(newCode);
     if (currentMacro?.macroId) clearDraft(currentMacro.macroId);
     setStatus('Saved to editor. Click Publish to persist.');
-    setStatusBarText('Saved to editor', 'ok');
     showToast('Saved to editor');
     logInfo('save', 'Saved to TinyMCE editor (edit mode)');
   } else {
     setStatus('Error: could not find macro body');
-    setStatusBarText('Save failed', 'error');
     showToast('Save failed: macro body not found', 'error');
     logError('save', 'Could not find macro body element');
   }
@@ -1374,41 +1476,44 @@ async function saveViewMode(pageMeta: PageMeta, newCode: string) {
 
     if (!targetMacro) {
       setStatus('Error: macro not found in page storage');
-      setStatusBarText('Save failed: macro not found', 'error');
       logError('save', 'Macro not found in page storage', { macroId: currentMacro!.macroId });
       return;
     }
 
     if (targetMacro.code.trim() !== originalCode.trim()) {
       setStatus('Warning: page was modified externally. Please refresh and try again.');
-      setStatusBarText('Save conflict', 'error');
       logWarn('save', 'Page modified externally — conflict detected');
       return;
     }
 
-    const newStorage = replaceStorageMacroCode(storageValue, currentMacro.macroId, newCode);
+    let newStorage = replaceStorageMacroCode(storageValue, currentMacro.macroId, newCode);
+
+    // Also update params in storage if changed
+    if (paramsChanged()) {
+      newStorage = replaceStorageMacroParams(newStorage, currentMacro.macroId, { ...currentMacro.params });
+      logInfo('save', 'Params updated in storage XML');
+    }
+
     const result = await logTimed('save', 'Save page via REST API', () =>
       savePage(pageMeta.pageId, title, version, newStorage)
     );
 
     if (result.success) {
       originalCode = newCode;
+      if (currentMacro) originalParams = { ...currentMacro.params };
       updateMacroCode(newCode);
       if (currentMacro?.macroId) clearDraft(currentMacro.macroId);
       setStatus(`Saved! Version ${result.newVersion}`);
-      setStatusBarText(`Saved! v${result.newVersion}`, 'ok');
       showToast(`Saved! Version ${result.newVersion}`);
       logInfo('save', `Saved successfully`, { version: result.newVersion });
       refreshDiagramOnPage(newCode);
     } else {
       setStatus(`Save failed: ${result.error}`);
-      setStatusBarText(`Save failed: ${result.error}`, 'error');
       showToast(`Save failed: ${result.error}`, 'error');
       logError('save', `Save failed: ${result.error}`);
     }
   } catch (e) {
     setStatus(`Save error: ${(e as Error).message}`);
-    setStatusBarText('Save error', 'error');
     showToast(`Save error: ${(e as Error).message}`, 'error');
     logError('save', `Save error: ${(e as Error).message}`);
   }
@@ -1501,7 +1606,7 @@ async function exportAsSvg() {
   if (!editorView || !currentMacro) return;
 
   let svgContent: string | undefined;
-  const previewSvg = q('#d2ext-preview svg');
+  const previewSvg = q('#d2ext-preview-canvas svg');
   if (previewSvg) {
     svgContent = previewSvg.outerHTML;
   } else {
@@ -1727,16 +1832,39 @@ const MODAL_CSS = `
     overflow: hidden;
   }
 
-  .d2ext-preview-content {
-    flex: 1;
-    overflow: auto;
-    padding: 16px;
+  .d2ext-preview-toolbar {
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    flex-shrink: 0;
   }
 
-  .d2ext-preview-content svg {
+  .d2ext-preview-zoom-label {
+    font-size: 11px;
+    color: #888;
+    margin-left: 4px;
+    min-width: 36px;
+  }
+
+  .d2ext-preview-content {
+    flex: 1;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+  }
+
+  .d2ext-preview-canvas {
+    transform-origin: 0 0;
+    padding: 16px;
+    display: inline-block;
+    min-width: 100%;
+    min-height: 100%;
+  }
+
+  .d2ext-preview-canvas svg {
     max-width: 100%;
     height: auto;
   }

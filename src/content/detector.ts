@@ -3,7 +3,6 @@ import { DEFAULT_PARAMS } from '../shared/types';
 import { readPageMeta, fetchPageStorage, parseStorageMacros } from '../shared/confluence-api';
 import { extractServerUrl } from '../shared/d2-server';
 import { logInfo, logWarn, logTimed } from '../shared/logger';
-import { setStatusBarText } from './status-bar';
 
 /** Decode HTML entities using the browser's built-in parser */
 function decodeHtmlEntities(s: string): string {
@@ -162,7 +161,6 @@ async function detect() {
   } catch {}
 
   logInfo('detector', `Detected ${detectedMacros.length} D2 macros (${mode} mode)`);
-  setStatusBarText(`${detectedMacros.length} macro${detectedMacros.length > 1 ? 's' : ''} detected`, 'ok');
 }
 
 // Run detection when DOM is ready

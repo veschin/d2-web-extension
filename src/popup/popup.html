@@ -7,10 +7,14 @@
 <body>
   <div class="popup">
     <div class="header">
-      <h1>D2 Editor</h1>
+      <div class="header-left">
+        <h1>D2 Editor</h1>
+        <button id="new-diagram" class="btn btn-primary btn-sm">+ New</button>
+      </div>
       <div class="tab-bar">
         <button class="tab active" data-tab="macros">Macros</button>
         <button class="tab" data-tab="settings">Settings</button>
+        <button class="tab" data-tab="debug">Debug</button>
       </div>
     </div>
 
@@ -18,6 +22,10 @@
     <div class="tab-content" id="tab-macros">
       <div id="status" class="status"></div>
       <div id="macro-list" class="macro-list"></div>
+      <div id="drafts-section" class="drafts-section" style="display:none">
+        <div class="drafts-header">Standalone Drafts</div>
+        <div id="drafts-list" class="drafts-list"></div>
+      </div>
     </div>
 
     <!-- Settings tab -->
@@ -35,11 +43,23 @@
         <h2>Editor</h2>
         <label class="setting-row">
           <span>Font Size</span>
-          <input type="number" id="editor-font-size" min="8" max="28" value="13" class="setting-input" />
+          <input type="number" id="editor-font-size" min="8" max="28" value="13" class="setting-input setting-input-sm" />
         </label>
         <button id="save-editor-prefs" class="btn btn-primary btn-sm">Save</button>
         <span id="editor-status" class="inline-status"></span>
       </section>
+    </div>
+
+    <!-- Debug tab -->
+    <div class="tab-content" id="tab-debug" style="display:none">
+      <div class="debug-controls">
+        <button id="debug-filter-all" class="btn btn-sm active">All</button>
+        <button id="debug-filter-net" class="btn btn-sm">Network</button>
+        <div class="debug-spacer"></div>
+        <button id="debug-copy" class="btn btn-sm">Copy</button>
+        <button id="debug-clear" class="btn btn-sm">Clear</button>
+      </div>
+      <div id="debug-entries" class="debug-entries"></div>
     </div>
   </div>
   <script src="popup/popup.js" type="module"></script>

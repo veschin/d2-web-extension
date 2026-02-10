@@ -98,6 +98,34 @@ export function replaceStorageMacroCode(
   return storageValue.replace(macroRegex, `$1${newCode}$2`);
 }
 
+/** Escape a string for safe insertion into XML attribute or text content */
+function escapeXml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/** Replace a specific macro's <ac:parameter> elements in storage XHTML by macro-id */
+export function replaceStorageMacroParams(
+  storageValue: string,
+  macroId: string,
+  params: Record<string, string>
+): string {
+  // Match the full structured-macro block by macro-id
+  const macroRegex = new RegExp(
+    `(<ac:structured-macro[^>]*ac:macro-id="${macroId}"[^>]*>)([\\s\\S]*?)(<\\/ac:structured-macro>)`,
+    ''
+  );
+  return storageValue.replace(macroRegex, (_match, openTag: string, inner: string, closeTag: string) => {
+    // Remove existing <ac:parameter> elements
+    const withoutParams = inner.replace(/<ac:parameter[^>]*>[^<]*<\/ac:parameter>\s*/g, '');
+    // Build new parameter elements (skip empty values, XML-escape values)
+    const paramEntries = Object.entries(params).filter(([, v]) => v !== '');
+    const paramXml = paramEntries.length > 0
+      ? paramEntries.map(([k, v]) => `<ac:parameter ac:name="${escapeXml(k)}">${escapeXml(v)}</ac:parameter>`).join('')
+      : '';
+    return `${openTag}${paramXml}${withoutParams}${closeTag}`;
+  });
+}
+
 /** Fetch D2 macros from a Confluence page by URL (for reference library) */
 export async function fetchPageMacrosByUrl(
   pageUrl: string

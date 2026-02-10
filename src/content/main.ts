@@ -6,4 +6,3 @@
 import './detector';
 import './overlay-buttons';
 import './editor-modal';
-import './status-bar';

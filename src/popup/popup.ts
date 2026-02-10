@@ -1,6 +1,7 @@
 import type { MacroInfo, PageMeta } from '../shared/types';
-import { loadEditorPrefs, saveEditorPrefs } from '../shared/editor-prefs';
+import { loadEditorPrefs, saveEditorPrefs, listStandaloneDrafts, deleteStandaloneDraft } from '../shared/editor-prefs';
 import { loadSettings, saveSettings } from '../shared/extension-settings';
+import { getEntries, clearLog, type LogEntry } from '../shared/logger';
 import { logInfo, logWarn } from '../shared/logger';
 
 let userServerUrl = '';
@@ -10,6 +11,7 @@ const statusEl = document.getElementById('status')!;
 const listEl = document.getElementById('macro-list')!;
 const tabMacros = document.getElementById('tab-macros')!;
 const tabSettings = document.getElementById('tab-settings')!;
+const tabDebug = document.getElementById('tab-debug')!;
 
 // --- Tabs ---
 document.querySelectorAll('.tab').forEach((tab) => {
@@ -19,8 +21,21 @@ document.querySelectorAll('.tab').forEach((tab) => {
     const target = tab.getAttribute('data-tab');
     tabMacros.style.display = target === 'macros' ? '' : 'none';
     tabSettings.style.display = target === 'settings' ? '' : 'none';
+    tabDebug.style.display = target === 'debug' ? '' : 'none';
     if (target === 'settings') initSettings();
+    if (target === 'debug') {
+      initDebug();
+    } else if (debugRefreshInterval) {
+      clearInterval(debugRefreshInterval);
+      debugRefreshInterval = null;
+    }
   });
+});
+
+// --- New diagram button ---
+document.getElementById('new-diagram')?.addEventListener('click', () => {
+  browser.tabs.create({ url: browser.runtime.getURL('standalone/editor.html') });
+  window.close();
 });
 
 // --- Macros tab ---
@@ -111,7 +126,59 @@ async function loadThumbnail(macro: MacroInfo, index: number) {
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// --- Drafts section ---
+async function loadDraftsList() {
+  const section = document.getElementById('drafts-section');
+  const listEl = document.getElementById('drafts-list');
+  if (!section || !listEl) return;
+
+  const drafts = await listStandaloneDrafts();
+  if (drafts.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = '';
+  listEl.innerHTML = drafts.map((d) => `
+    <div class="draft-item" data-draft-id="${escapeHtml(d.id)}">
+      <div class="draft-item-info">
+        <div class="draft-item-name">${escapeHtml(d.name)}</div>
+        <div class="draft-item-date">${new Date(d.updatedAt).toLocaleDateString()} ${new Date(d.updatedAt).toLocaleTimeString()}</div>
+      </div>
+      <div class="draft-item-actions">
+        <button class="btn btn-sm" data-open-draft="${escapeHtml(d.id)}">Open</button>
+        <button class="btn btn-sm btn-danger" data-delete-draft="${escapeHtml(d.id)}">Del</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Wire open buttons
+  listEl.querySelectorAll('[data-open-draft]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-open-draft');
+      if (id) {
+        browser.tabs.create({ url: browser.runtime.getURL(`standalone/editor.html?draft=${id}`) });
+        window.close();
+      }
+    });
+  });
+
+  // Wire delete buttons
+  listEl.querySelectorAll('[data-delete-draft]').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-delete-draft');
+      const name = drafts.find((d) => d.id === id)?.name ?? 'draft';
+      if (id && confirm(`Delete "${name}"?`)) {
+        await deleteStandaloneDraft(id);
+        loadDraftsList();
+      }
+    });
+  });
 }
 
 // --- Settings tab ---
@@ -153,7 +220,97 @@ function showInlineStatus(id: string, text: string) {
   }
 }
 
-// --- Init: load settings then macros ---
+// --- Debug tab ---
+let debugInitialized = false;
+let debugFilter: 'all' | 'api' = 'all';
+let debugRefreshInterval: ReturnType<typeof setInterval> | null = null;
+
+async function initDebug() {
+  if (!debugInitialized) {
+    debugInitialized = true;
+
+    document.getElementById('debug-filter-all')?.addEventListener('click', () => {
+      debugFilter = 'all';
+      updateDebugFilterButtons();
+      refreshDebug();
+    });
+    document.getElementById('debug-filter-net')?.addEventListener('click', () => {
+      debugFilter = 'api';
+      updateDebugFilterButtons();
+      refreshDebug();
+    });
+    document.getElementById('debug-copy')?.addEventListener('click', async () => {
+      const entries = await getEntries();
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(entries, null, 2));
+      } catch {}
+    });
+    document.getElementById('debug-clear')?.addEventListener('click', async () => {
+      await clearLog();
+      refreshDebug();
+    });
+  }
+
+  refreshDebug();
+  // Auto-refresh while debug tab is visible
+  if (debugRefreshInterval) clearInterval(debugRefreshInterval);
+  debugRefreshInterval = setInterval(refreshDebug, 2000);
+}
+
+function updateDebugFilterButtons() {
+  const allBtn = document.getElementById('debug-filter-all');
+  const netBtn = document.getElementById('debug-filter-net');
+  allBtn?.classList.toggle('active', debugFilter === 'all');
+  netBtn?.classList.toggle('active', debugFilter === 'api');
+}
+
+async function refreshDebug() {
+  const container = document.getElementById('debug-entries');
+  if (!container) return;
+
+  let entries = await getEntries();
+  if (debugFilter === 'api') {
+    entries = entries.filter((e) => e.source === 'api');
+  }
+
+  if (entries.length === 0) {
+    const msg = debugFilter === 'api' ? 'No network requests captured yet' : 'No log entries';
+    container.innerHTML = `<div class="debug-empty">${msg}</div>`;
+    return;
+  }
+
+  container.innerHTML = entries
+    .slice()
+    .reverse()
+    .map((e) => renderDebugEntry(e))
+    .join('');
+}
+
+function renderDebugEntry(entry: LogEntry): string {
+  const time = new Date(entry.ts).toLocaleTimeString();
+  const levelClass = `debug-level-${entry.level}`;
+  const duration = entry.durationMs != null ? ` <span class="debug-duration">${entry.durationMs}ms</span>` : '';
+
+  let msg = escapeHtml(entry.message);
+  if (entry.source === 'api') {
+    msg = msg.replace(/→ (\d{3})/, (_, status) => {
+      const s = parseInt(status, 10);
+      const cls = s < 300 ? 'debug-status-ok' : s < 500 ? 'debug-status-warn' : 'debug-status-err';
+      return `→ <span class="${cls}">${status}</span>`;
+    });
+    msg = msg.replace(/FAILED/, '<span class="debug-status-err">FAILED</span>');
+  }
+
+  return `
+    <div class="debug-entry ${levelClass}">
+      <span class="debug-time">${time}</span>
+      <span class="debug-source">${entry.source}</span>
+      <span class="debug-msg">${msg}${duration}</span>
+    </div>
+  `;
+}
+
+// --- Init: load settings then macros + drafts ---
 loadSettings().then((settings) => {
   userServerUrl = settings.serverUrl;
 }).finally(() => {
@@ -167,4 +324,7 @@ loadSettings().then((settings) => {
       statusEl.textContent = 'Navigate to a Confluence page first';
     }
   });
+
+  // Load standalone drafts
+  loadDraftsList();
 });
