@@ -76,6 +76,30 @@ export interface ReferenceBlock {
   macroIndex: number;
 }
 
+/** Semantic metadata extracted from a D2 block via tree-sitter AST */
+export interface BlockMetadata {
+  shapeCount: number;
+  connectionCount: number;
+  nestingDepth: number;
+  category: 'component' | 'flow' | 'sequence' | 'grid' | 'mixed' | 'simple';
+  hasStyles: boolean;
+  hasClasses: boolean;
+  topIdentifiers: string[];
+}
+
+/** A ReferenceBlock enriched with metadata and optional SVG preview */
+export interface EnrichedBlock extends ReferenceBlock {
+  metadata?: BlockMetadata;
+  svgThumbnail?: string;
+}
+
+/** A macro with its parsed blocks, used for hierarchical library navigation */
+export interface ReferenceMacro {
+  index: number;
+  code: string;
+  blocks: ReferenceBlock[];
+}
+
 /** Cached reference data for a space */
 export interface ReferenceCache {
   spaceKey: string;
@@ -96,4 +120,5 @@ export type ExtMessage =
   | { type: 'get-references'; spaceKey: string }
   | { type: 'refresh-references'; spaceKey: string }
   | { type: 'get-reference-sources' }
-  | { type: 'set-reference-sources'; sources: ReferenceSource[] };
+  | { type: 'set-reference-sources'; sources: ReferenceSource[] }
+  | { type: 'get-reference-macros'; spaceKey: string; forceRefresh?: boolean };

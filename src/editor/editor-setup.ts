@@ -18,6 +18,7 @@ export interface EditorCallbacks {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   getServerUrl?: () => string;
+  readOnly?: boolean;
 }
 
 /**
@@ -39,7 +40,7 @@ export async function createEditor(
 
   const d2Exts = d2Extensions(parser);
 
-  const lintExts = callbacks.getServerUrl
+  const lintExts = !callbacks.readOnly && callbacks.getServerUrl
     ? [d2Linter({ getServerUrl: callbacks.getServerUrl }), lintGutter()]
     : [];
 
@@ -54,6 +55,27 @@ export async function createEditor(
     });
   }
 
+  const keymapExt = callbacks.readOnly ? [] : [keymap.of([
+    {
+      key: 'Mod-s',
+      run: () => { callbacks.onSave?.(); return true; },
+    },
+    {
+      key: 'Mod-Shift-f',
+      run: () => { callbacks.onFormat?.(); return true; },
+    },
+    {
+      key: 'Mod-=',
+      run: () => { callbacks.onZoomIn?.(); return true; },
+    },
+    {
+      key: 'Mod--',
+      run: () => { callbacks.onZoomOut?.(); return true; },
+    },
+  ])];
+
+  const readOnlyExt = callbacks.readOnly ? [EditorState.readOnly.of(true)] : [];
+
   const view = new EditorView({
     parent: container,
     root,
@@ -63,36 +85,8 @@ export async function createEditor(
         basicSetup,
         ...d2Exts,
         ...lintExts,
-        keymap.of([
-          {
-            key: 'Mod-s',
-            run: () => {
-              callbacks.onSave?.();
-              return true;
-            },
-          },
-          {
-            key: 'Mod-Shift-f',
-            run: () => {
-              callbacks.onFormat?.();
-              return true;
-            },
-          },
-          {
-            key: 'Mod-=',
-            run: () => {
-              callbacks.onZoomIn?.();
-              return true;
-            },
-          },
-          {
-            key: 'Mod--',
-            run: () => {
-              callbacks.onZoomOut?.();
-              return true;
-            },
-          },
-        ]),
+        ...keymapExt,
+        ...readOnlyExt,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             callbacks.onChange?.(update.state.doc.toString());

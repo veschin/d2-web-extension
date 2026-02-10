@@ -1,6 +1,6 @@
 import type { MacroInfo, PageMeta } from '../shared/types';
 import { logInfo, logWarn, logError, logTimed } from '../shared/logger';
-import { fetchReferences, getReferenceSources, setReferenceSources } from '../shared/reference-api';
+import { fetchReferences, fetchReferenceMacros, getReferenceSources, setReferenceSources } from '../shared/reference-api';
 
 const STATE_KEY = 'd2ext-sw-state';
 
@@ -202,6 +202,17 @@ browser.runtime.onMessage.addListener((message, sender) => {
 
     case 'set-reference-sources': {
       return setReferenceSources(message.sources).then(() => ({ success: true }));
+    }
+
+    case 'get-reference-macros': {
+      const { spaceKey, forceRefresh } = message;
+      logInfo('system', `SW: get-reference-macros for space ${spaceKey}`);
+      return fetchReferenceMacros(spaceKey, forceRefresh)
+        .then((result) => result)
+        .catch((e) => {
+          logError('system', `get-reference-macros failed: ${(e as Error).message}`);
+          return { macros: [], pageTitle: '', error: (e as Error).message };
+        });
     }
   }
 });

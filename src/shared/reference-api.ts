@@ -3,7 +3,7 @@
  * Runs in the service worker context (has access to Confluence cookies).
  */
 
-import type { ReferenceSource, ReferenceBlock, ReferenceCache } from './types';
+import type { ReferenceSource, ReferenceBlock, ReferenceCache, ReferenceMacro } from './types';
 import { extractD2Blocks } from './d2-parser';
 import { logInfo, logError, logTimed } from './logger';
 
@@ -139,5 +139,87 @@ export async function fetchReferences(
 
     logInfo('system', `Fetched ${blocks.length} reference blocks for space ${spaceKey}`);
     return blocks;
+  });
+}
+
+/**
+ * Fetch reference macros grouped by macro index (preserves hierarchy for UI).
+ * Returns macros with their parsed blocks, plus the source page title.
+ */
+export async function fetchReferenceMacros(
+  spaceKey: string,
+  forceRefresh = false
+): Promise<{ macros: ReferenceMacro[]; pageTitle: string }> {
+  const sources = await getReferenceSources();
+  const source = sources.find((s) => s.spaceKey === spaceKey);
+  if (!source) {
+    logInfo('system', `No reference source configured for space ${spaceKey}`);
+    return { macros: [], pageTitle: '' };
+  }
+
+  return logTimed('api', `Fetch reference macros for space ${spaceKey}`, async () => {
+    const searchUrl = `/rest/api/content?spaceKey=${encodeURIComponent(source.spaceKey)}&title=${encodeURIComponent(source.pageTitle)}&expand=body.storage,version`;
+
+    const res = await fetch(searchUrl, { credentials: 'same-origin' });
+    if (!res.ok) {
+      logError('api', `Failed to fetch reference page: HTTP ${res.status}`);
+      return { macros: [], pageTitle: source.pageTitle };
+    }
+
+    const data = await res.json();
+    const page = data.results?.[0];
+    if (!page) {
+      logError('api', `Reference page "${source.pageTitle}" not found in space ${source.spaceKey}`);
+      return { macros: [], pageTitle: source.pageTitle };
+    }
+
+    const storageValue: string = page.body.storage.value;
+    const pageVersion: number = page.version.number;
+
+    const macroRegex =
+      /<ac:structured-macro[^>]*ac:name="d2"[^>]*>([\s\S]*?)<\/ac:structured-macro>/g;
+    let match;
+    const macros: ReferenceMacro[] = [];
+    const allBlocks: ReferenceBlock[] = [];
+    let macroIndex = 0;
+
+    while ((match = macroRegex.exec(storageValue)) !== null) {
+      if (source.macroIndices && source.macroIndices.length > 0 && !source.macroIndices.includes(macroIndex)) {
+        macroIndex++;
+        continue;
+      }
+
+      const inner = match[1];
+      const cdataMatch = inner.match(
+        /<ac:plain-text-body><!\[CDATA\[([\s\S]*?)\]\]><\/ac:plain-text-body>/
+      );
+      const code = cdataMatch ? cdataMatch[1] : '';
+
+      if (code.trim()) {
+        const d2Blocks = extractD2Blocks(code);
+        const blocks: ReferenceBlock[] = d2Blocks.map((b, bi) => ({
+          name: b.name,
+          code: b.code,
+          sourcePageTitle: source.pageTitle,
+          sourceSpaceKey: source.spaceKey,
+          blockIndex: bi,
+          macroIndex,
+        }));
+        macros.push({ index: macroIndex, code, blocks });
+        allBlocks.push(...blocks);
+      }
+      macroIndex++;
+    }
+
+    // Update the flat cache too so fetchReferences() stays consistent
+    await setCachedReferences(spaceKey, {
+      spaceKey,
+      blocks: allBlocks,
+      fetchedAt: Date.now(),
+      pageVersion,
+    });
+
+    logInfo('system', `Fetched ${macros.length} macros (${allBlocks.length} blocks) for space ${spaceKey}`);
+    return { macros, pageTitle: page.title };
   });
 }

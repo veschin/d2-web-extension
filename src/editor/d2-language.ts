@@ -258,6 +258,37 @@ function extractDocWords(doc: string, currentWord: string): Completion[] {
   return Array.from(seen).map((label) => ({ label, type: 'variable', boost: -1 }));
 }
 
+/** Reference block completions injected by the library panel */
+let referenceCompletions: Completion[] = [];
+
+/**
+ * Update the reference block completions shown in autocomplete.
+ * Called by editor-modal.ts when reference blocks are loaded/cleared.
+ */
+export function setReferenceCompletions(blocks: Array<{ name: string; code: string }>) {
+  const seen = new Set<string>();
+  referenceCompletions = blocks
+    .filter((b) => {
+      if (seen.has(b.name)) return false;
+      seen.add(b.name);
+      return true;
+    })
+    .map((b) => ({
+      label: b.name,
+      type: 'text',
+      detail: 'ref',
+      boost: -2,
+      info: b.code.substring(0, 200),
+      apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
+        const insert = '\n' + b.code + '\n';
+        view.dispatch({
+          changes: { from, to, insert },
+          selection: { anchor: from + insert.length },
+        });
+      },
+    }));
+}
+
 function d2Completions(context: CompletionContext) {
   const word = context.matchBefore(/[\w-]+/);
   if (!word && !context.explicit) return null;
@@ -265,7 +296,7 @@ function d2Completions(context: CompletionContext) {
   const docWords = extractDocWords(context.state.doc.toString(), currentWord);
   return {
     from: word?.from ?? context.pos,
-    options: [...allCompletions, ...docWords],
+    options: [...allCompletions, ...docWords, ...referenceCompletions],
     validFor: /^[\w-]*$/,
   };
 }
