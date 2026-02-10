@@ -881,6 +881,7 @@ function wireBlockCardEvents(container: Element, blocks: EnrichedBlock[], depth 
           const childDepth = depth + 1;
           childContainer.innerHTML = childEnriched.map((c, ci) => renderBlockCard(c, ci, childDepth)).join('');
           wireBlockCardEvents(childContainer, childEnriched, childDepth);
+          observeChildThumbnails(childContainer, childEnriched);
         }
       }
     });
@@ -958,9 +959,13 @@ function renderBlockCard(block: EnrichedBlock, index: number, depth = 0): string
     </div>`;
 }
 
+/** Map from thumbnail element to its block, used by the IntersectionObserver */
+const thumbBlockMap = new WeakMap<Element, EnrichedBlock>();
+
 /** Setup IntersectionObserver for lazy SVG thumbnail rendering */
 function setupThumbnailObserver(blocks: EnrichedBlock[]) {
   thumbnailObserver?.disconnect();
+  // WeakMap entries for old elements are GC'd automatically
 
   const root = q('#d2ext-lib-content');
   if (!root) return;
@@ -969,15 +974,31 @@ function setupThumbnailObserver(blocks: EnrichedBlock[]) {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
       const el = entry.target as HTMLElement;
-      const idx = parseInt(el.getAttribute('data-thumb-idx') ?? '', 10);
-      if (isNaN(idx) || !blocks[idx]) continue;
+      const block = thumbBlockMap.get(el);
+      if (!block) continue;
       thumbnailObserver?.unobserve(el);
-      renderThumbnail(el, blocks[idx]);
+      renderThumbnail(el, block);
     }
   }, { root, rootMargin: '100px', threshold: 0 });
 
   root.querySelectorAll('[data-thumb-idx]').forEach((el) => {
-    thumbnailObserver?.observe(el);
+    const idx = parseInt(el.getAttribute('data-thumb-idx') ?? '', 10);
+    if (!isNaN(idx) && blocks[idx]) {
+      thumbBlockMap.set(el, blocks[idx]);
+      thumbnailObserver?.observe(el);
+    }
+  });
+}
+
+/** Observe thumbnail elements for a set of child blocks (appends to existing observer) */
+function observeChildThumbnails(container: Element, blocks: EnrichedBlock[]) {
+  if (!thumbnailObserver) return;
+  container.querySelectorAll('[data-thumb-idx]').forEach((el) => {
+    const idx = parseInt(el.getAttribute('data-thumb-idx') ?? '', 10);
+    if (!isNaN(idx) && blocks[idx]) {
+      thumbBlockMap.set(el, blocks[idx]);
+      thumbnailObserver?.observe(el);
+    }
   });
 }
 
