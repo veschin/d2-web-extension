@@ -1,5 +1,6 @@
 import type { MacroInfo, PageMeta, ReferenceSource, ReferenceBlock, ReferenceMacro, EnrichedBlock, BlockMetadata } from '../shared/types';
-import { renderSvg, formatD2 } from '../shared/d2-server';
+import { renderSvg, formatD2, renderSvgWithFallback, resolveServerUrl, renderPng, checkServerReachable } from '../shared/d2-server';
+import { loadSettings } from '../shared/extension-settings';
 import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, savePage, fetchPageMacrosByUrl } from '../shared/confluence-api';
 import { createEditor } from '../editor/editor-setup';
 import { setReferenceCompletions, initD2Parser } from '../editor/d2-language';
@@ -21,6 +22,7 @@ let draftTimer: ReturnType<typeof setTimeout> | null = null;
 let previewEnabled = false;
 let libraryOpen = false;
 let optionsOpen = false;
+let userServerUrl = '';
 
 // Library panel state
 let libraryView: 'sources' | 'macros' | 'blocks' = 'sources';
@@ -44,6 +46,7 @@ const ICONS = {
   library: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M16 12h2"/><path d="M16 8h2"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/><path d="M6 12h2"/><path d="M6 8h2"/></svg>',
   settings: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
   refreshCw: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>',
+  download: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
 };
 
 function q(selector: string): HTMLElement | null {
@@ -85,6 +88,12 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
   currentMacro = macro;
   originalCode = macro.code;
 
+  // Load user server URL from settings
+  try {
+    const settings = await loadSettings();
+    userServerUrl = settings.serverUrl;
+  } catch { userServerUrl = ''; }
+
   // Create shadow DOM host
   hostEl = document.createElement('div');
   hostEl.id = 'd2ext-shadow-host';
@@ -113,6 +122,13 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
           <button class="d2ext-btn" data-action="library" title="Reference library">${ICONS.library}<span class="d2ext-btn-label"> Library</span></button>
           <button class="d2ext-btn" data-action="preview" title="Toggle preview panel">${ICONS.eye}<span class="d2ext-btn-label"> Preview</span></button>
           <button class="d2ext-btn" data-action="format" title="Format (Ctrl+Shift+F)">${ICONS.alignLeft}<span class="d2ext-btn-label"> Format</span></button>
+          <div class="d2ext-export-wrap">
+            <button class="d2ext-btn" data-action="export" title="Export diagram">${ICONS.download}<span class="d2ext-btn-label"> Export</span></button>
+            <div class="d2ext-export-dropdown" id="d2ext-export-dropdown" style="display:none">
+              <button class="d2ext-export-option" data-export="svg">Export as SVG</button>
+              <button class="d2ext-export-option" data-export="png">Export as PNG</button>
+            </div>
+          </div>
           <button class="d2ext-btn d2ext-btn-primary" data-action="save" title="Save (Ctrl+S)">${ICONS.save}<span class="d2ext-btn-label"> Save</span></button>
           <button class="d2ext-btn" data-action="close" title="Close (Escape)">${ICONS.x}</button>
         </div>
@@ -185,7 +201,7 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
         <span class="d2ext-status" id="d2ext-status">Ready</span>
         <span class="d2ext-server-info">
           <span class="d2ext-server-dot" id="d2ext-server-dot"></span>
-          <span class="d2ext-server-url" id="d2ext-server-url">${macro.params.server || 'no server'}</span>
+          <span class="d2ext-server-url" id="d2ext-server-url">${userServerUrl ? 'user: ' + userServerUrl : (macro.params.server ? 'macro: ' + macro.params.server : 'no server')}</span>
         </span>
       </div>
     </div>
@@ -219,7 +235,19 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
   overlay.querySelector('[data-action="close"]')?.addEventListener('click', () => closeEditor());
   overlay.querySelector('[data-action="zoom-in"]')?.addEventListener('click', () => changeFontSize(1));
   overlay.querySelector('[data-action="zoom-out"]')?.addEventListener('click', () => changeFontSize(-1));
+
+  // Export button + dropdown
+  overlay.querySelector('[data-action="export"]')?.addEventListener('click', () => toggleExportDropdown());
+  overlay.querySelector('[data-export="svg"]')?.addEventListener('click', () => { hideExportDropdown(); exportAsSvg(); });
+  overlay.querySelector('[data-export="png"]')?.addEventListener('click', () => { hideExportDropdown(); exportAsPng(); });
+
   overlay.addEventListener('click', (e) => {
+    // Close export dropdown on outside click
+    const dropdown = q('#d2ext-export-dropdown');
+    if (dropdown?.style.display !== 'none') {
+      const wrap = (e.target as HTMLElement).closest?.('.d2ext-export-wrap');
+      if (!wrap) hideExportDropdown();
+    }
     if (e.target === overlay) closeEditor();
   });
 
@@ -250,7 +278,7 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
       },
       onZoomIn: () => changeFontSize(1),
       onZoomOut: () => changeFontSize(-1),
-      getServerUrl: () => currentMacro?.params.server ?? '',
+      getServerUrl: () => userServerUrl || currentMacro?.params.server || '',
     });
 
     // Apply persisted font size
@@ -284,24 +312,23 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
   checkServerConnection(macro.params.server);
 }
 
-async function checkServerConnection(serverUrl: string) {
+async function checkServerConnection(macroServerUrl: string) {
   const dot = q('#d2ext-server-dot');
+  const urlEl = q('#d2ext-server-url');
   if (!dot) return;
-  if (!serverUrl) {
+
+  const resolved = await resolveServerUrl(userServerUrl, macroServerUrl);
+  if (!resolved) {
     dot.style.background = '#ef4444';
+    if (urlEl) urlEl.textContent = 'no server';
     return;
   }
-  try {
-    // Direct fetch — content scripts with host_permissions bypass CORS
-    const res = await fetch(`${serverUrl}/svg`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'd2=a',
-    });
-    dot.style.background = res.status > 0 ? '#22c55e' : '#ef4444';
-  } catch {
-    dot.style.background = '#ef4444';
-  }
+
+  const isUserServer = resolved === userServerUrl && userServerUrl !== '';
+  if (urlEl) urlEl.textContent = `${isUserServer ? 'user' : 'macro'}: ${resolved}`;
+
+  const ok = await checkServerReachable(resolved);
+  dot.style.background = ok ? '#22c55e' : '#ef4444';
 }
 
 /** Close the editor modal */
@@ -1013,7 +1040,7 @@ const SVG_CACHE_KEY = 'd2ext-svg-cache';
 
 /** Render a single SVG thumbnail */
 async function renderThumbnail(el: HTMLElement, block: EnrichedBlock) {
-  const serverUrl = currentMacro?.params.server;
+  const serverUrl = await resolveServerUrl(userServerUrl, currentMacro?.params.server ?? '');
   if (!serverUrl) {
     el.innerHTML = '<span class="d2ext-lib-block-thumb-ph" style="font-size:9px;color:#aaa">No server</span>';
     return;
@@ -1192,22 +1219,22 @@ function mapD2BlockToRef(
   return ref;
 }
 
-/** Render preview via d2server */
+/** Render preview via d2server with fallback */
 let previewInFlight = false;
 async function doPreview() {
-  logInfo('preview', `doPreview: view=${!!editorView} macro=${!!currentMacro} inFlight=${previewInFlight} server=${currentMacro?.params?.server ?? 'N/A'}`);
+  logInfo('preview', `doPreview: view=${!!editorView} macro=${!!currentMacro} inFlight=${previewInFlight}`);
   if (!editorView || !currentMacro) return;
   if (previewInFlight) return; // Skip if previous request still running
   previewInFlight = true;
 
   const code = getEditorCode();
-  const serverUrl = currentMacro.params.server;
+  const macroServerUrl = currentMacro.params.server;
 
   const previewEl = q('#d2ext-preview');
   if (!previewEl) { previewInFlight = false; return; }
 
-  if (!serverUrl) {
-    previewEl.innerHTML = '<div class="d2ext-preview-empty">No D2 server URL detected.<br>Check macro configuration.</div>';
+  if (!userServerUrl && !macroServerUrl) {
+    previewEl.innerHTML = '<div class="d2ext-preview-empty">No D2 server URL detected.<br>Check macro configuration or set a custom server in settings.</div>';
     setStatus('Preview: no server URL');
     logWarn('preview', 'No D2 server URL detected');
     previewInFlight = false;
@@ -1220,7 +1247,7 @@ async function doPreview() {
   hideError();
 
   try {
-    const { svg, error } = await renderSvg(serverUrl, code, currentMacro!.params);
+    const { svg, error, usedServer } = await renderSvgWithFallback(userServerUrl, macroServerUrl, code, currentMacro!.params);
 
     if (error) {
       showError(error);
@@ -1234,7 +1261,8 @@ async function doPreview() {
         svgEl.style.maxWidth = '100%';
         svgEl.style.height = 'auto';
       }
-      setStatus('Preview updated');
+      const isUser = usedServer === userServerUrl && userServerUrl !== '';
+      setStatus(`Preview updated (${isUser ? 'user' : 'macro'} server)`);
     } else {
       previewEl.innerHTML = '<div class="d2ext-preview-empty">Empty response from server.</div>';
       setStatus('Preview: empty response');
@@ -1251,12 +1279,12 @@ async function doPreview() {
   }
 }
 
-/** Format code via d2server */
+/** Format code via d2server (with user server fallback) */
 async function doFormat() {
   if (!editorView || !currentMacro) return;
 
   const code = getEditorCode();
-  const serverUrl = currentMacro.params.server;
+  const serverUrl = await resolveServerUrl(userServerUrl, currentMacro.params.server);
   if (!serverUrl) {
     showError('No D2 server URL detected.');
     setStatus('Format error: no server');
@@ -1402,8 +1430,12 @@ function refreshDiagramOnPage(newCode: string) {
   }
 
   const diagramDiv = element.querySelector('.d2-diagram');
-  if (diagramDiv && currentMacro.params.server) {
-    renderSvg(currentMacro.params.server, newCode, currentMacro.params).then(({ svg }) => {
+  if (diagramDiv) {
+    resolveServerUrl(userServerUrl, currentMacro.params.server).then((srv) => {
+      if (!srv) return;
+      return renderSvg(srv, newCode, currentMacro!.params);
+    }).then((result) => {
+      const svg = result?.svg;
       if (svg && diagramDiv) {
         const container = diagramDiv.querySelector('[id^="svg-container"]') || diagramDiv;
         container.innerHTML = svg;
@@ -1451,6 +1483,109 @@ function showToast(text: string, type: 'success' | 'error' = 'success') {
     toast!.className = 'd2ext-toast';
   }, 3000);
 }
+
+// --- Export ---
+
+function toggleExportDropdown() {
+  const dropdown = q('#d2ext-export-dropdown');
+  if (!dropdown) return;
+  dropdown.style.display = dropdown.style.display === 'none' ? '' : 'none';
+}
+
+function hideExportDropdown() {
+  const dropdown = q('#d2ext-export-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
+}
+
+async function exportAsSvg() {
+  if (!editorView || !currentMacro) return;
+
+  let svgContent: string | undefined;
+  const previewSvg = q('#d2ext-preview svg');
+  if (previewSvg) {
+    svgContent = previewSvg.outerHTML;
+  } else {
+    setStatus('Rendering for export...');
+    const macroServerUrl = currentMacro.params.server;
+    const result = await renderSvgWithFallback(userServerUrl, macroServerUrl, getEditorCode(), currentMacro.params);
+    if (result.error || !result.svg) {
+      showError(result.error || 'Empty SVG');
+      setStatus('Export failed');
+      return;
+    }
+    svgContent = result.svg;
+  }
+
+  downloadFile(svgContent, 'diagram.svg', 'image/svg+xml');
+  setStatus('Exported as SVG');
+  showToast('Exported SVG');
+}
+
+async function exportAsPng() {
+  if (!editorView || !currentMacro) return;
+
+  const macroServerUrl = currentMacro.params.server;
+  const serverUrl = await resolveServerUrl(userServerUrl, macroServerUrl);
+  if (!serverUrl) {
+    showError('No server URL configured');
+    setStatus('Export failed: no server');
+    return;
+  }
+
+  setStatus('Rendering PNG...');
+  const code = getEditorCode();
+  const result = await renderPng(serverUrl, code, currentMacro.params);
+  if (result.error || !result.png) {
+    showError(result.error || 'Empty PNG');
+    setStatus('Export failed');
+    return;
+  }
+
+  downloadBlob(result.png, 'diagram.png');
+  setStatus('Exported as PNG');
+  showToast('Exported PNG');
+}
+
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  downloadBlob(blob, filename);
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// --- Listen for settings changes (e.g. user changes server URL in options page while editor is open) ---
+browser.storage?.onChanged?.addListener((changes, area) => {
+  if (area !== 'local') return;
+  if (changes['d2ext-settings']) {
+    const newVal = changes['d2ext-settings'].newValue as Record<string, unknown> | undefined;
+    if (newVal && typeof newVal === 'object') {
+      userServerUrl = (newVal.serverUrl as string) || '';
+      // Update footer display
+      const urlEl = q('#d2ext-server-url');
+      if (urlEl && currentMacro) {
+        urlEl.textContent = userServerUrl
+          ? `user: ${userServerUrl}`
+          : (currentMacro.params.server ? `macro: ${currentMacro.params.server}` : 'no server');
+      }
+      // Re-check connection
+      if (currentMacro) checkServerConnection(currentMacro.params.server);
+      // Re-render preview if enabled
+      if (previewEnabled) {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => doPreview(), 500);
+      }
+    }
+  }
+});
 
 // --- CSS injected into shadow DOM (isolated from page styles) ---
 
@@ -2097,6 +2232,41 @@ const MODAL_CSS = `
     background: #fef2f2;
     color: #991b1b;
     border: 1px solid #fecaca;
+  }
+
+  /* Export dropdown */
+  .d2ext-export-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+  .d2ext-export-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    z-index: 100;
+    min-width: 140px;
+    overflow: hidden;
+  }
+  .d2ext-export-option {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 12px;
+    font-family: inherit;
+    color: #333;
+    cursor: pointer;
+  }
+  .d2ext-export-option:hover {
+    background: #f0f4ff;
+    color: #4a90d9;
   }
 
   @media (max-width: 900px) {

@@ -23,6 +23,15 @@
     <!-- Settings tab -->
     <div class="tab-content" id="tab-settings" style="display:none">
       <section class="settings-section">
+        <h2>D2 Server</h2>
+        <label class="setting-row">
+          <span>Custom Server URL</span>
+          <input type="text" id="custom-server-url" placeholder="https://..." class="setting-input" />
+        </label>
+        <button id="save-server" class="btn btn-primary btn-sm">Save</button>
+        <span id="server-status" class="inline-status"></span>
+      </section>
+      <section class="settings-section">
         <h2>Editor</h2>
         <label class="setting-row">
           <span>Font Size</span>

@@ -9,6 +9,16 @@
     <h1>D2 Editor Settings</h1>
 
     <section class="section">
+      <h2>D2 Server</h2>
+      <p class="help">Custom D2 server URL. Used as primary; macro's server as fallback.</p>
+      <div class="server-row">
+        <input type="text" id="server-url" placeholder="https://d2.example.com" />
+        <button id="test-server" class="btn btn-secondary">Test</button>
+      </div>
+      <span id="server-status" class="status"></span>
+    </section>
+
+    <section class="section">
       <h2>Reference Sources</h2>
       <p class="help">Configure Confluence pages that contain reusable D2 component blocks. One page per space.</p>
       <div id="sources-list" class="sources-list"></div>

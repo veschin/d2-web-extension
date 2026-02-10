@@ -1,6 +1,9 @@
 import type { MacroInfo, PageMeta } from '../shared/types';
 import { loadEditorPrefs, saveEditorPrefs } from '../shared/editor-prefs';
+import { loadSettings, saveSettings } from '../shared/extension-settings';
 import { logInfo, logWarn } from '../shared/logger';
+
+let userServerUrl = '';
 
 // --- DOM refs ---
 const statusEl = document.getElementById('status')!;
@@ -76,7 +79,9 @@ async function loadThumbnail(macro: MacroInfo, index: number) {
     return;
   }
 
-  if (!macro.params.server) {
+  // Resolve server: user setting first, then macro param
+  const serverUrl = userServerUrl || macro.params.server;
+  if (!serverUrl) {
     thumbEl.innerHTML = '<span style="font-size:10px;color:#aaa">N/A</span>';
     return;
   }
@@ -89,7 +94,7 @@ async function loadThumbnail(macro: MacroInfo, index: number) {
 
     const result = await browser.runtime.sendMessage({
       type: 'proxy-fetch',
-      url: `${macro.params.server}/svg`,
+      url: `${serverUrl}/svg`,
       method: 'POST',
       body: body.toString(),
       contentType: 'application/x-www-form-urlencoded',
@@ -116,6 +121,19 @@ async function initSettings() {
   if (settingsInitialized) return;
   settingsInitialized = true;
 
+  // Server URL
+  const settings = await loadSettings();
+  const serverInput = document.getElementById('custom-server-url') as HTMLInputElement;
+  if (serverInput) serverInput.value = settings.serverUrl;
+
+  document.getElementById('save-server')?.addEventListener('click', async () => {
+    const url = serverInput?.value.trim() ?? '';
+    await saveSettings({ serverUrl: url });
+    userServerUrl = url;
+    showInlineStatus('server-status', 'Saved!');
+  });
+
+  // Editor prefs
   const prefs = await loadEditorPrefs();
   const fontInput = document.getElementById('editor-font-size') as HTMLInputElement;
   if (fontInput) fontInput.value = String(prefs.fontSize);
@@ -135,14 +153,18 @@ function showInlineStatus(id: string, text: string) {
   }
 }
 
-// --- Init: load macros ---
-browser.runtime.sendMessage({ type: 'get-macros' }).then((response) => {
-  if (response) {
-    logInfo('system', `Popup: retrieved ${response.macros?.length ?? 0} macros`);
-    renderMacros(response.macros, response.pageMeta);
-  } else {
-    logWarn('system', 'Popup: no response from service worker');
-    statusEl.className = 'status empty';
-    statusEl.textContent = 'Navigate to a Confluence page first';
-  }
+// --- Init: load settings then macros ---
+loadSettings().then((settings) => {
+  userServerUrl = settings.serverUrl;
+}).finally(() => {
+  browser.runtime.sendMessage({ type: 'get-macros' }).then((response) => {
+    if (response) {
+      logInfo('system', `Popup: retrieved ${response.macros?.length ?? 0} macros`);
+      renderMacros(response.macros, response.pageMeta);
+    } else {
+      logWarn('system', 'Popup: no response from service worker');
+      statusEl.className = 'status empty';
+      statusEl.textContent = 'Navigate to a Confluence page first';
+    }
+  });
 });

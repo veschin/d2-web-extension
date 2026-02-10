@@ -44,6 +44,31 @@ h2 {
   margin-bottom: 12px;
 }
 
+.server-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.server-row input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.server-row input:focus {
+  border-color: #4a90d9;
+  outline: none;
+}
+
+.status-error {
+  color: #c62828;
+}
+
 .sources-list {
   display: flex;
   flex-direction: column;
