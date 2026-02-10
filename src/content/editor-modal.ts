@@ -899,6 +899,8 @@ function setupDragOnCards(container: Element, blocks: EnrichedBlock[]) {
     el.dataset.dragBound = '1';
 
     el.addEventListener('dragstart', (e) => {
+      // Stop propagation so parent cards don't override child drag data
+      e.stopPropagation();
       const idx = parseInt(el.getAttribute('data-blk-idx') ?? '', 10);
       const block = blocks[idx];
       if (!block || !e.dataTransfer) return;
@@ -907,7 +909,8 @@ function setupDragOnCards(container: Element, blocks: EnrichedBlock[]) {
       e.dataTransfer.effectAllowed = 'copy';
       el.classList.add('d2ext-dragging');
     });
-    el.addEventListener('dragend', () => {
+    el.addEventListener('dragend', (e) => {
+      e.stopPropagation();
       el.classList.remove('d2ext-dragging');
     });
   });
