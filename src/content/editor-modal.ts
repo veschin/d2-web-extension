@@ -1,6 +1,6 @@
 import type { MacroInfo, PageMeta, ReferenceSource, ReferenceBlock, ReferenceMacro, EnrichedBlock, BlockMetadata } from '../shared/types';
 import { renderSvg, formatD2 } from '../shared/d2-server';
-import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, savePage } from '../shared/confluence-api';
+import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, savePage, fetchPageMacrosByUrl } from '../shared/confluence-api';
 import { createEditor } from '../editor/editor-setup';
 import { setReferenceCompletions, initD2Parser } from '../editor/d2-language';
 import { analyzeD2Block } from '../editor/d2-analyzer';
@@ -32,6 +32,7 @@ let libraryInitialized = false;
 let thumbnailObserver: IntersectionObserver | null = null;
 let libViewerView: EditorView | null = null;
 let d2Parser: Parser | undefined;
+const metadataCache = new Map<string, BlockMetadata>();
 
 /** Lucide icons (lucide.dev, MIT license) */
 const ICONS = {
@@ -339,6 +340,7 @@ function closeEditor() {
   thumbnailObserver?.disconnect();
   thumbnailObserver = null;
   setReferenceCompletions([]);
+  metadataCache.clear();
 }
 
 /** Toggle the preview pane */
@@ -432,20 +434,24 @@ async function initLibrary() {
     librarySources = resp?.sources ?? [];
   } catch { librarySources = []; }
 
-  // Wire search
+  // Wire search with debounce
   const searchInput = q('#d2ext-lib-search') as HTMLInputElement | null;
   if (searchInput) {
+    let searchTimer: ReturnType<typeof setTimeout> | null = null;
     searchInput.addEventListener('input', () => {
-      const query = searchInput.value.trim().toLowerCase();
-      if (query.length >= 2) {
-        renderSearchResults(query);
-      } else if (libraryView === 'sources') {
-        renderLibrarySources();
-      } else if (libraryView === 'macros' && currentLibSource) {
-        renderLibraryMacros(currentLibSource);
-      } else if (libraryView === 'blocks' && currentLibSource) {
-        renderLibraryBlocks(currentLibSource, currentLibMacroIdx);
-      }
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        const query = searchInput.value.trim().toLowerCase();
+        if (query.length >= 2) {
+          renderSearchResults(query);
+        } else if (libraryView === 'sources') {
+          renderLibrarySources();
+        } else if (libraryView === 'macros' && currentLibSource) {
+          renderLibraryMacros(currentLibSource);
+        } else if (libraryView === 'blocks' && currentLibSource) {
+          renderLibraryBlocks(currentLibSource, currentLibMacroIdx);
+        }
+      }, 150);
     });
   }
 
@@ -649,25 +655,24 @@ async function fetchByUrl(url: string) {
   contentEl.innerHTML = `<div class="d2ext-lib-loading">${ICONS.loader} Fetching page...</div>`;
 
   try {
-    const resp: { macros?: Array<{ index: number; code: string; firstLine: string }>; pageTitle?: string; pageId?: string; error?: string } =
-      await browser.runtime.sendMessage({ type: 'fetch-url-macros', url });
+    // Call directly from content script (same origin as Confluence) so cookies are sent
+    const resp = await fetchPageMacrosByUrl(url);
 
-    if (resp?.error) {
+    if (resp.error) {
       contentEl.innerHTML = `<div class="d2ext-lib-empty">${escapeHtml(resp.error)}</div>`;
       return;
     }
 
-    const rawMacros = resp?.macros ?? [];
-    if (rawMacros.length === 0) {
+    if (resp.macros.length === 0) {
       contentEl.innerHTML = '<div class="d2ext-lib-empty">No D2 macros found on this page.</div>';
       return;
     }
 
-    const pageTitle = resp?.pageTitle ?? 'URL Import';
-    const sourceKey = `url:${resp?.pageId ?? url}`;
+    const pageTitle = resp.pageTitle || 'URL Import';
+    const sourceKey = `url:${url}`;
 
     // Convert to ReferenceMacro format with blocks
-    const macros: ReferenceMacro[] = rawMacros.map((m) => {
+    const macros: ReferenceMacro[] = resp.macros.map((m) => {
       const blocks = extractD2Blocks(m.code);
       return {
         index: m.index,
@@ -762,6 +767,16 @@ async function renderLibraryMacros(source: ReferenceSource) {
 }
 
 /** Render blocks list for a specific macro */
+/** Get or compute block metadata with caching */
+function getBlockMetadata(code: string): BlockMetadata {
+  let meta = metadataCache.get(code);
+  if (!meta) {
+    meta = analyzeD2Block(code, d2Parser);
+    metadataCache.set(code, meta);
+  }
+  return meta;
+}
+
 function renderLibraryBlocks(source: ReferenceSource, macroIndex: number) {
   const contentEl = q('#d2ext-lib-content');
   if (!contentEl) return;
@@ -776,7 +791,7 @@ function renderLibraryBlocks(source: ReferenceSource, macroIndex: number) {
   // Enrich blocks with metadata
   const enriched: EnrichedBlock[] = macro.blocks.map((b) => ({
     ...b,
-    metadata: analyzeD2Block(b.code, d2Parser),
+    metadata: getBlockMetadata(b.code),
   }));
 
   contentEl.innerHTML = enriched.map((b, i) => renderBlockCard(b, i)).join('');
@@ -786,7 +801,7 @@ function renderLibraryBlocks(source: ReferenceSource, macroIndex: number) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const idx = parseInt(btn.getAttribute('data-blk-copy')!, 10);
-      navigator.clipboard.writeText(enriched[idx].code);
+      navigator.clipboard.writeText(enriched[idx].code).catch(() => {});
       setStatus('Copied to clipboard');
       showToast('Copied');
     });
@@ -940,7 +955,7 @@ function renderSearchResults(query: string) {
   for (const [, data] of libraryMacroData) {
     for (const macro of data.macros) {
       for (const block of macro.blocks) {
-        const meta = analyzeD2Block(block.code, d2Parser);
+        const meta = getBlockMetadata(block.code);
         const searchable = [
           block.name,
           meta.category,
@@ -966,7 +981,7 @@ function renderSearchResults(query: string) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const idx = parseInt(btn.getAttribute('data-blk-copy')!, 10);
-      navigator.clipboard.writeText(results[idx].code);
+      navigator.clipboard.writeText(results[idx].code).catch(() => {});
       setStatus('Copied to clipboard');
     });
   });

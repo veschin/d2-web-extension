@@ -121,5 +121,4 @@ export type ExtMessage =
   | { type: 'refresh-references'; spaceKey: string }
   | { type: 'get-reference-sources' }
   | { type: 'set-reference-sources'; sources: ReferenceSource[] }
-  | { type: 'get-reference-macros'; spaceKey: string; forceRefresh?: boolean }
-  | { type: 'fetch-url-macros'; url: string };
+  | { type: 'get-reference-macros'; spaceKey: string; forceRefresh?: boolean };
