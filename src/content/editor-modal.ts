@@ -691,7 +691,15 @@ async function fetchByUrl(url: string) {
     libraryMacroData.set(sourceKey, { macros, pageTitle });
     updateReferenceCompletions();
 
-    // Navigate to macros view with a synthetic source
+    // Persist source if not already saved
+    if (!librarySources.some((s) => s.spaceKey === sourceKey)) {
+      librarySources.push({ spaceKey: sourceKey, pageTitle });
+      try {
+        await browser.runtime.sendMessage({ type: 'set-reference-sources', sources: librarySources });
+      } catch {}
+    }
+
+    // Navigate to macros view
     currentLibSource = { spaceKey: sourceKey, pageTitle };
     libraryView = 'macros';
     renderLibraryBreadcrumb();
@@ -712,11 +720,33 @@ async function renderLibraryMacros(source: ReferenceSource) {
   if (!data) {
     contentEl.innerHTML = `<div class="d2ext-lib-loading">${ICONS.loader} Loading macros...</div>`;
     try {
-      const resp = await browser.runtime.sendMessage({
-        type: 'get-reference-macros',
-        spaceKey: source.spaceKey,
-      });
-      data = { macros: resp?.macros ?? [], pageTitle: resp?.pageTitle ?? source.pageTitle };
+      if (source.spaceKey.startsWith('url:')) {
+        // URL-based sources: fetch directly from content script (needs cookies)
+        const url = source.spaceKey.slice(4);
+        const resp = await fetchPageMacrosByUrl(url);
+        if (resp.error) throw new Error(resp.error);
+        const macros: ReferenceMacro[] = resp.macros.map((m) => {
+          const blocks = extractD2Blocks(m.code);
+          return {
+            index: m.index,
+            code: m.code,
+            blocks: blocks.map((b, bi) => ({
+              name: b.name, code: b.code,
+              sourcePageTitle: resp.pageTitle || source.pageTitle,
+              sourceSpaceKey: source.spaceKey,
+              blockIndex: bi, macroIndex: m.index,
+            })),
+          };
+        });
+        data = { macros, pageTitle: resp.pageTitle || source.pageTitle };
+      } else {
+        // Space-based sources: fetch via service worker
+        const resp = await browser.runtime.sendMessage({
+          type: 'get-reference-macros',
+          spaceKey: source.spaceKey,
+        });
+        data = { macros: resp?.macros ?? [], pageTitle: resp?.pageTitle ?? source.pageTitle };
+      }
       libraryMacroData.set(source.spaceKey, data);
       updateReferenceCompletions();
     } catch (e) {
