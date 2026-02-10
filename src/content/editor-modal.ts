@@ -1,8 +1,11 @@
-import type { MacroInfo, PageMeta, ReferenceBlock } from '../shared/types';
+import type { MacroInfo, PageMeta, ReferenceSource, ReferenceBlock, ReferenceMacro, EnrichedBlock, BlockMetadata } from '../shared/types';
 import { renderSvg, formatD2 } from '../shared/d2-server';
-import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, savePage, fetchPageMacrosByUrl } from '../shared/confluence-api';
+import { fetchPageStorage, parseStorageMacros, replaceStorageMacroCode, savePage } from '../shared/confluence-api';
 import { createEditor } from '../editor/editor-setup';
+import { setReferenceCompletions, initD2Parser } from '../editor/d2-language';
+import { analyzeD2Block } from '../editor/d2-analyzer';
 import type { EditorView } from '@codemirror/view';
+import type { Parser } from 'web-tree-sitter';
 import { logInfo, logWarn, logError, logTimed } from '../shared/logger';
 import { setStatusBarText } from './status-bar';
 import { loadEditorPrefs, saveEditorPrefs, saveDraft, loadDraft, clearDraft } from '../shared/editor-prefs';
@@ -17,7 +20,17 @@ let draftTimer: ReturnType<typeof setTimeout> | null = null;
 let previewEnabled = false;
 let libraryOpen = false;
 let optionsOpen = false;
-let referenceBlocks: ReferenceBlock[] = [];
+
+// Library panel state
+let libraryView: 'sources' | 'macros' | 'blocks' = 'sources';
+let librarySources: ReferenceSource[] = [];
+let libraryMacroData: Map<string, { macros: ReferenceMacro[]; pageTitle: string }> = new Map();
+let currentLibSource: ReferenceSource | null = null;
+let currentLibMacroIdx = -1;
+let libraryInitialized = false;
+let thumbnailObserver: IntersectionObserver | null = null;
+let libViewerView: EditorView | null = null;
+let d2Parser: Parser | undefined;
 
 /** Lucide icons (lucide.dev, MIT license) */
 const ICONS = {
@@ -111,14 +124,12 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
           <div class="d2ext-error-bar" id="d2ext-error" style="display:none"></div>
         </div>
         <div class="d2ext-library-pane" id="d2ext-library-pane" style="display:none">
-          <div class="d2ext-library-header">
-            <input type="text" class="d2ext-library-url" id="d2ext-library-url" placeholder="Paste Confluence page URL..." />
-            <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" id="d2ext-library-fetch">Fetch</button>
+          <div class="d2ext-lib-breadcrumb" id="d2ext-lib-breadcrumb"></div>
+          <div class="d2ext-lib-search-bar">
+            <input type="text" class="d2ext-lib-search" id="d2ext-lib-search" placeholder="Search blocks..." />
           </div>
-          <div class="d2ext-library-page-title" id="d2ext-library-page-title" style="display:none"></div>
-          <div class="d2ext-library-list" id="d2ext-library-list">
-            <div class="d2ext-library-empty">Paste a Confluence page URL above<br>to load its D2 macros.</div>
-          </div>
+          <div class="d2ext-lib-content" id="d2ext-lib-content"></div>
+          <div class="d2ext-lib-viewer" id="d2ext-lib-viewer" style="display:none"></div>
         </div>
         <div class="d2ext-options-pane" id="d2ext-options-pane" style="display:none">
           <div class="d2ext-options-title">Macro Parameters</div>
@@ -309,16 +320,24 @@ function closeEditor() {
 
   editorView?.destroy();
   editorView = null;
+  libViewerView?.destroy();
+  libViewerView = null;
   hostEl.remove();
   hostEl = null;
   shadow = null;
   currentMacro = null;
   previewEnabled = false;
   libraryOpen = false;
-  libraryWired = false;
+  libraryInitialized = false;
   optionsOpen = false;
-  fetchedMacros = [];
-  referenceBlocks = [];
+  libraryView = 'sources';
+  librarySources = [];
+  libraryMacroData = new Map();
+  currentLibSource = null;
+  currentLibMacroIdx = -1;
+  thumbnailObserver?.disconnect();
+  thumbnailObserver = null;
+  setReferenceCompletions([]);
 }
 
 /** Toggle the preview pane */
@@ -391,127 +410,539 @@ function populateOptions(params: MacroInfo['params']) {
 }
 
 /** Toggle the reference library panel */
-let libraryWired = false;
 function toggleLibrary(_pageMeta: PageMeta) {
   libraryOpen = !libraryOpen;
   const pane = q('#d2ext-library-pane');
   if (pane) pane.style.display = libraryOpen ? '' : 'none';
-  if (libraryOpen && !libraryWired) {
-    libraryWired = true;
-    wireLibrary();
+  if (libraryOpen && !libraryInitialized) {
+    libraryInitialized = true;
+    initLibrary();
   }
 }
 
-/** Fetched macros from a reference page */
-let fetchedMacros: Array<{ index: number; code: string; firstLine: string }> = [];
+/** Initialize library panel: load sources, wire search */
+async function initLibrary() {
+  // Cache parser for metadata analysis
+  try { d2Parser = await initD2Parser(); } catch { /* fallback to regex */ }
 
-const LIBRARY_URL_KEY = 'd2ext-library-url';
+  // Load configured sources
+  try {
+    const resp = await browser.runtime.sendMessage({ type: 'get-reference-sources' });
+    librarySources = resp?.sources ?? [];
+  } catch { librarySources = []; }
 
-/** Wire up library panel event handlers */
-function wireLibrary() {
-  const urlInput = q('#d2ext-library-url') as HTMLInputElement | null;
-  const fetchBtn = q('#d2ext-library-fetch');
-  if (!urlInput || !fetchBtn) return;
+  // Wire search
+  const searchInput = q('#d2ext-lib-search') as HTMLInputElement | null;
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value.trim().toLowerCase();
+      if (query.length >= 2) {
+        renderSearchResults(query);
+      } else if (libraryView === 'sources') {
+        renderLibrarySources();
+      } else if (libraryView === 'macros' && currentLibSource) {
+        renderLibraryMacros(currentLibSource);
+      } else if (libraryView === 'blocks' && currentLibSource) {
+        renderLibraryBlocks(currentLibSource, currentLibMacroIdx);
+      }
+    });
+  }
 
-  // Restore last used URL from storage
-  browser.storage.local.get(LIBRARY_URL_KEY).then((result) => {
-    const saved = result[LIBRARY_URL_KEY] as string | undefined;
-    if (saved && urlInput) {
-      urlInput.value = saved;
-      // Auto-fetch if we had a saved URL
-      fetchUrlMacros(saved);
-    }
-  }).catch(() => {});
+  renderLibraryBreadcrumb();
+  renderLibrarySources();
+}
 
-  const doFetch = () => {
-    const url = urlInput.value.trim();
-    if (url) {
-      // Persist the URL
-      browser.storage.local.set({ [LIBRARY_URL_KEY]: url }).catch(() => {});
-    }
-    fetchUrlMacros(url);
-  };
+/** Render breadcrumb navigation */
+function renderLibraryBreadcrumb() {
+  const el = q('#d2ext-lib-breadcrumb');
+  if (!el) return;
 
-  fetchBtn.addEventListener('click', doFetch);
-  urlInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') doFetch();
+  const parts: string[] = [];
+  parts.push(libraryView === 'sources'
+    ? '<span class="d2ext-lib-bc-current">Library</span>'
+    : '<span class="d2ext-lib-bc-link" data-bc="sources">Library</span>');
+
+  if (libraryView === 'macros' || libraryView === 'blocks') {
+    const data = currentLibSource ? libraryMacroData.get(currentLibSource.spaceKey) : null;
+    const title = data?.pageTitle || currentLibSource?.pageTitle || '';
+    parts.push('<span class="d2ext-lib-bc-sep">&rsaquo;</span>');
+    parts.push(libraryView === 'macros'
+      ? `<span class="d2ext-lib-bc-current">${escapeHtml(title)}</span>`
+      : `<span class="d2ext-lib-bc-link" data-bc="macros">${escapeHtml(title)}</span>`);
+  }
+
+  if (libraryView === 'blocks') {
+    parts.push('<span class="d2ext-lib-bc-sep">&rsaquo;</span>');
+    parts.push(`<span class="d2ext-lib-bc-current">Macro #${currentLibMacroIdx + 1}</span>`);
+  }
+
+  el.innerHTML = parts.join('');
+
+  // Wire breadcrumb clicks
+  el.querySelectorAll('[data-bc]').forEach((link) => {
+    link.addEventListener('click', () => {
+      const target = link.getAttribute('data-bc');
+      closeLibViewer();
+      if (target === 'sources') {
+        libraryView = 'sources';
+        renderLibraryBreadcrumb();
+        renderLibrarySources();
+      } else if (target === 'macros' && currentLibSource) {
+        libraryView = 'macros';
+        renderLibraryBreadcrumb();
+        renderLibraryMacros(currentLibSource);
+      }
+    });
   });
 }
 
-/** Fetch D2 macros from a pasted Confluence URL */
-async function fetchUrlMacros(url: string) {
-  const listEl = q('#d2ext-library-list');
-  const titleEl = q('#d2ext-library-page-title');
-  if (!listEl || !url) return;
+/** Render sources list view */
+function renderLibrarySources() {
+  const contentEl = q('#d2ext-lib-content');
+  if (!contentEl) return;
+  libraryView = 'sources';
 
-  listEl.innerHTML = `<div class="d2ext-library-loading">${ICONS.loader} Fetching macros...</div>`;
-  if (titleEl) titleEl.style.display = 'none';
+  if (librarySources.length === 0) {
+    contentEl.innerHTML = `
+      <div class="d2ext-lib-empty">No reference sources configured.<br>Add a source below.</div>
+      <div class="d2ext-lib-add-btn-wrap">
+        <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" id="d2ext-lib-add-src">+ Add Source</button>
+      </div>`;
+    q('#d2ext-lib-add-src')?.addEventListener('click', () => showAddSourceForm());
+    return;
+  }
 
+  contentEl.innerHTML = librarySources.map((s, i) => `
+    <div class="d2ext-lib-source-card" data-src-idx="${i}">
+      <div class="d2ext-lib-source-info">
+        <span class="d2ext-lib-source-space">${escapeHtml(s.spaceKey)}</span>
+        <span class="d2ext-lib-source-title">${escapeHtml(s.pageTitle)}</span>
+      </div>
+      <div class="d2ext-lib-source-actions">
+        <button class="d2ext-btn d2ext-btn-sm" data-src-refresh="${i}" title="Refresh">${ICONS.refreshCw}</button>
+        <button class="d2ext-btn d2ext-btn-sm" data-src-remove="${i}" title="Remove">${ICONS.x}</button>
+      </div>
+    </div>
+  `).join('') + `
+    <div class="d2ext-lib-add-btn-wrap">
+      <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" id="d2ext-lib-add-src">+ Add Source</button>
+    </div>`;
+
+  // Wire source card clicks (navigate to macros)
+  contentEl.querySelectorAll('.d2ext-lib-source-card').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('[data-src-refresh], [data-src-remove]')) return;
+      const idx = parseInt(card.getAttribute('data-src-idx')!, 10);
+      currentLibSource = librarySources[idx];
+      libraryView = 'macros';
+      renderLibraryBreadcrumb();
+      renderLibraryMacros(currentLibSource);
+    });
+  });
+
+  // Wire refresh buttons
+  contentEl.querySelectorAll('[data-src-refresh]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.getAttribute('data-src-refresh')!, 10);
+      refreshSource(librarySources[idx]);
+    });
+  });
+
+  // Wire remove buttons
+  contentEl.querySelectorAll('[data-src-remove]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.getAttribute('data-src-remove')!, 10);
+      removeReferenceSource(idx);
+    });
+  });
+
+  // Wire add button
+  q('#d2ext-lib-add-src')?.addEventListener('click', () => showAddSourceForm());
+}
+
+/** Show inline form to add a new source */
+function showAddSourceForm() {
+  const contentEl = q('#d2ext-lib-content');
+  if (!contentEl) return;
+
+  // Append form at the end
+  const form = document.createElement('div');
+  form.className = 'd2ext-lib-source-form';
+  form.innerHTML = `
+    <input type="text" class="d2ext-lib-input" placeholder="Space key (e.g. TEAM)" id="d2ext-lib-new-space" />
+    <input type="text" class="d2ext-lib-input" placeholder="Page title" id="d2ext-lib-new-title" />
+    <div class="d2ext-lib-form-actions">
+      <button class="d2ext-btn d2ext-btn-sm" id="d2ext-lib-cancel-src">Cancel</button>
+      <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" id="d2ext-lib-save-src">Add</button>
+    </div>`;
+  contentEl.appendChild(form);
+
+  const spaceInput = q('#d2ext-lib-new-space') as HTMLInputElement;
+  spaceInput?.focus();
+
+  q('#d2ext-lib-cancel-src')?.addEventListener('click', () => renderLibrarySources());
+  q('#d2ext-lib-save-src')?.addEventListener('click', () => {
+    const space = (q('#d2ext-lib-new-space') as HTMLInputElement)?.value.trim();
+    const title = (q('#d2ext-lib-new-title') as HTMLInputElement)?.value.trim();
+    if (space && title) addReferenceSource(space, title);
+  });
+}
+
+/** Add a new reference source */
+async function addReferenceSource(spaceKey: string, pageTitle: string) {
+  librarySources.push({ spaceKey, pageTitle });
   try {
-    const result = await fetchPageMacrosByUrl(url);
+    await browser.runtime.sendMessage({ type: 'set-reference-sources', sources: librarySources });
+  } catch {}
+  renderLibrarySources();
+  logInfo('editor', `Added reference source: ${spaceKey}/${pageTitle}`);
+}
 
-    if (result.error) {
-      listEl.innerHTML = `<div class="d2ext-library-empty">${escapeHtml(result.error)}</div>`;
+/** Remove a reference source */
+async function removeReferenceSource(index: number) {
+  const removed = librarySources.splice(index, 1)[0];
+  try {
+    await browser.runtime.sendMessage({ type: 'set-reference-sources', sources: librarySources });
+  } catch {}
+  if (removed) libraryMacroData.delete(removed.spaceKey);
+  renderLibrarySources();
+  updateReferenceCompletions();
+  logInfo('editor', `Removed reference source at index ${index}`);
+}
+
+/** Refresh a source (force re-fetch) */
+async function refreshSource(source: ReferenceSource) {
+  libraryMacroData.delete(source.spaceKey);
+  if (currentLibSource?.spaceKey === source.spaceKey && libraryView !== 'sources') {
+    renderLibraryMacros(source);
+  }
+  setStatus(`Refreshing ${source.pageTitle}...`);
+}
+
+/** Render macros list for a source */
+async function renderLibraryMacros(source: ReferenceSource) {
+  const contentEl = q('#d2ext-lib-content');
+  if (!contentEl) return;
+
+  // Check cache
+  let data = libraryMacroData.get(source.spaceKey);
+  if (!data) {
+    contentEl.innerHTML = `<div class="d2ext-lib-loading">${ICONS.loader} Loading macros...</div>`;
+    try {
+      const resp = await browser.runtime.sendMessage({
+        type: 'get-reference-macros',
+        spaceKey: source.spaceKey,
+      });
+      data = { macros: resp?.macros ?? [], pageTitle: resp?.pageTitle ?? source.pageTitle };
+      libraryMacroData.set(source.spaceKey, data);
+      updateReferenceCompletions();
+    } catch (e) {
+      contentEl.innerHTML = `<div class="d2ext-lib-empty">Failed to load: ${escapeHtml((e as Error).message)}</div>`;
       return;
     }
+  }
 
-    fetchedMacros = result.macros;
+  if (data.macros.length === 0) {
+    contentEl.innerHTML = '<div class="d2ext-lib-empty">No D2 macros found on this page.</div>';
+    return;
+  }
 
-    if (fetchedMacros.length === 0) {
-      listEl.innerHTML = '<div class="d2ext-library-empty">No D2 macros found on this page.</div>';
+  contentEl.innerHTML = data.macros.map((m, i) => `
+    <div class="d2ext-lib-macro-card" data-macro-idx="${m.index}">
+      <div class="d2ext-lib-macro-info">
+        <span class="d2ext-lib-macro-name">Macro #${m.index + 1}</span>
+        <span class="d2ext-lib-badge">${m.blocks.length} block${m.blocks.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div class="d2ext-lib-macro-actions">
+        <button class="d2ext-btn d2ext-btn-sm" data-macro-view="${i}" title="View code">${ICONS.eye}</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Wire macro card clicks (navigate to blocks)
+  contentEl.querySelectorAll('.d2ext-lib-macro-card').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).closest('[data-macro-view]')) return;
+      const idx = parseInt(card.getAttribute('data-macro-idx')!, 10);
+      currentLibMacroIdx = idx;
+      libraryView = 'blocks';
+      renderLibraryBreadcrumb();
+      renderLibraryBlocks(source, idx);
+    });
+  });
+
+  // Wire view buttons (read-only editor)
+  contentEl.querySelectorAll('[data-macro-view]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const i = parseInt(btn.getAttribute('data-macro-view')!, 10);
+      openMacroViewer(data!.macros[i].code);
+    });
+  });
+
+  renderLibraryBreadcrumb();
+}
+
+/** Render blocks list for a specific macro */
+function renderLibraryBlocks(source: ReferenceSource, macroIndex: number) {
+  const contentEl = q('#d2ext-lib-content');
+  if (!contentEl) return;
+
+  const data = libraryMacroData.get(source.spaceKey);
+  const macro = data?.macros.find((m) => m.index === macroIndex);
+  if (!macro || macro.blocks.length === 0) {
+    contentEl.innerHTML = '<div class="d2ext-lib-empty">No blocks in this macro.</div>';
+    return;
+  }
+
+  // Enrich blocks with metadata
+  const enriched: EnrichedBlock[] = macro.blocks.map((b) => ({
+    ...b,
+    metadata: analyzeD2Block(b.code, d2Parser),
+  }));
+
+  contentEl.innerHTML = enriched.map((b, i) => renderBlockCard(b, i)).join('');
+
+  // Wire copy/insert buttons
+  contentEl.querySelectorAll('[data-blk-copy]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.getAttribute('data-blk-copy')!, 10);
+      navigator.clipboard.writeText(enriched[idx].code);
+      setStatus('Copied to clipboard');
+      showToast('Copied');
+    });
+  });
+
+  contentEl.querySelectorAll('[data-blk-insert]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.getAttribute('data-blk-insert')!, 10);
+      insertAtCursor(enriched[idx].code);
+      setStatus(`Inserted "${enriched[idx].name}"`);
+      showToast(`Inserted "${enriched[idx].name}"`);
+    });
+  });
+
+  // Setup lazy thumbnail observer
+  setupThumbnailObserver(enriched);
+  renderLibraryBreadcrumb();
+}
+
+/** Render a single block card HTML */
+function renderBlockCard(block: EnrichedBlock, index: number): string {
+  const meta = block.metadata;
+  const badges: string[] = [];
+  if (meta) {
+    if (meta.shapeCount > 0) badges.push(`<span class="d2ext-lib-badge">${meta.shapeCount} shape${meta.shapeCount !== 1 ? 's' : ''}</span>`);
+    if (meta.connectionCount > 0) badges.push(`<span class="d2ext-lib-badge">${meta.connectionCount} &rarr;</span>`);
+    badges.push(`<span class="d2ext-lib-badge d2ext-lib-badge-cat">${meta.category}</span>`);
+    if (meta.nestingDepth > 1) badges.push(`<span class="d2ext-lib-badge">depth ${meta.nestingDepth}</span>`);
+    if (meta.hasStyles) badges.push('<span class="d2ext-lib-badge">styled</span>');
+    if (meta.hasClasses) badges.push('<span class="d2ext-lib-badge">classes</span>');
+  }
+
+  return `
+    <div class="d2ext-lib-block-card" data-blk-idx="${index}">
+      <div class="d2ext-lib-block-top">
+        <div class="d2ext-lib-block-thumb" data-thumb-idx="${index}">
+          <span class="d2ext-lib-block-thumb-ph">${ICONS.loader}</span>
+        </div>
+        <div class="d2ext-lib-block-info">
+          <div class="d2ext-lib-block-name" title="${escapeHtml(block.name)}">${escapeHtml(block.name)}</div>
+          <div class="d2ext-lib-block-meta">${badges.join('')}</div>
+        </div>
+      </div>
+      <div class="d2ext-lib-block-actions">
+        <button class="d2ext-btn d2ext-btn-sm" data-blk-copy="${index}">Copy</button>
+        <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" data-blk-insert="${index}">Insert</button>
+      </div>
+    </div>`;
+}
+
+/** Setup IntersectionObserver for lazy SVG thumbnail rendering */
+function setupThumbnailObserver(blocks: EnrichedBlock[]) {
+  thumbnailObserver?.disconnect();
+
+  const root = q('#d2ext-lib-content');
+  if (!root) return;
+
+  thumbnailObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const el = entry.target as HTMLElement;
+      const idx = parseInt(el.getAttribute('data-thumb-idx') ?? '', 10);
+      if (isNaN(idx) || !blocks[idx]) continue;
+      thumbnailObserver?.unobserve(el);
+      renderThumbnail(el, blocks[idx]);
+    }
+  }, { root, rootMargin: '100px', threshold: 0 });
+
+  root.querySelectorAll('[data-thumb-idx]').forEach((el) => {
+    thumbnailObserver?.observe(el);
+  });
+}
+
+/** DJB2 hash for cache keys */
+function hashCode(s: string): number {
+  let hash = 5381;
+  for (let i = 0; i < s.length; i++) hash = ((hash << 5) + hash + s.charCodeAt(i)) | 0;
+  return hash;
+}
+
+const SVG_CACHE_KEY = 'd2ext-svg-cache';
+
+/** Render a single SVG thumbnail */
+async function renderThumbnail(el: HTMLElement, block: EnrichedBlock) {
+  const serverUrl = currentMacro?.params.server;
+  if (!serverUrl) {
+    el.innerHTML = '<span class="d2ext-lib-block-thumb-ph" style="font-size:9px;color:#aaa">No server</span>';
+    return;
+  }
+
+  const blockKey = `${block.sourceSpaceKey}:${block.macroIndex}:${block.blockIndex}`;
+  const codeHash = hashCode(block.code);
+
+  // Check cache
+  try {
+    const result = await browser.storage.local.get(SVG_CACHE_KEY);
+    const cache = (result[SVG_CACHE_KEY] as Record<string, { svg: string; codeHash: number; cachedAt: number }>) ?? {};
+    const cached = cache[blockKey];
+    if (cached && cached.codeHash === codeHash && Date.now() - cached.cachedAt < 24 * 60 * 60 * 1000) {
+      el.innerHTML = cached.svg;
+      fitThumbSvg(el);
       return;
     }
+  } catch {}
 
-    // Show page title
-    if (titleEl && result.pageTitle) {
-      titleEl.textContent = result.pageTitle;
-      titleEl.style.display = '';
+  // Render via d2-server
+  try {
+    const { svg, error } = await renderSvg(serverUrl, block.code, { ...currentMacro!.params, scale: '0.5' });
+    if (error || !svg) {
+      el.innerHTML = '<span class="d2ext-lib-block-thumb-ph" style="font-size:9px;color:#e57373">Error</span>';
+      return;
     }
+    el.innerHTML = svg;
+    fitThumbSvg(el);
 
-    renderFetchedMacros();
-    logInfo('editor', `Fetched ${fetchedMacros.length} macros from URL`);
-  } catch (e) {
-    listEl.innerHTML = `<div class="d2ext-library-empty">Failed: ${escapeHtml((e as Error).message)}</div>`;
-    logError('editor', `fetch-url-macros failed: ${(e as Error).message}`);
+    // Save to cache
+    try {
+      const result = await browser.storage.local.get(SVG_CACHE_KEY);
+      const cache = (result[SVG_CACHE_KEY] as Record<string, { svg: string; codeHash: number; cachedAt: number }>) ?? {};
+      // Evict oldest if too many
+      const keys = Object.keys(cache);
+      if (keys.length > 200) {
+        const sorted = keys.sort((a, b) => (cache[a].cachedAt || 0) - (cache[b].cachedAt || 0));
+        for (let i = 0; i < 50; i++) delete cache[sorted[i]];
+      }
+      cache[blockKey] = { svg, codeHash, cachedAt: Date.now() };
+      await browser.storage.local.set({ [SVG_CACHE_KEY]: cache });
+    } catch {}
+  } catch {
+    el.innerHTML = '<span class="d2ext-lib-block-thumb-ph" style="font-size:9px;color:#e57373">Error</span>';
   }
 }
 
-/** Render fetched macros list */
-function renderFetchedMacros() {
-  const listEl = q('#d2ext-library-list');
-  if (!listEl) return;
+function fitThumbSvg(el: HTMLElement) {
+  const svgEl = el.querySelector('svg');
+  if (svgEl) {
+    svgEl.style.maxWidth = '100%';
+    svgEl.style.maxHeight = '100%';
+    svgEl.style.width = 'auto';
+    svgEl.style.height = 'auto';
+  }
+}
 
-  listEl.innerHTML = fetchedMacros
-    .map((m, i) => `
-      <div class="d2ext-ref-item" data-ref-index="${i}">
-        <div class="d2ext-ref-name">Macro #${m.index + 1}</div>
-        <pre class="d2ext-ref-code">${escapeHtml(m.code.substring(0, 200))}${m.code.length > 200 ? '...' : ''}</pre>
-        <div class="d2ext-ref-actions">
-          <button class="d2ext-btn d2ext-btn-sm" data-ref-copy="${i}">Copy</button>
-          <button class="d2ext-btn d2ext-btn-sm d2ext-btn-primary" data-ref-insert="${i}">Insert</button>
-        </div>
-      </div>
-    `)
-    .join('');
+/** Search blocks across all loaded sources */
+function renderSearchResults(query: string) {
+  const contentEl = q('#d2ext-lib-content');
+  if (!contentEl) return;
 
-  // Bind click handlers
-  listEl.querySelectorAll('[data-ref-copy]').forEach((btn) => {
+  const results: EnrichedBlock[] = [];
+  for (const [, data] of libraryMacroData) {
+    for (const macro of data.macros) {
+      for (const block of macro.blocks) {
+        const meta = analyzeD2Block(block.code, d2Parser);
+        const searchable = [
+          block.name,
+          meta.category,
+          ...meta.topIdentifiers,
+          block.code.substring(0, 300),
+        ].join(' ').toLowerCase();
+        if (searchable.includes(query)) {
+          results.push({ ...block, metadata: meta });
+        }
+      }
+    }
+  }
+
+  if (results.length === 0) {
+    contentEl.innerHTML = `<div class="d2ext-lib-empty">No blocks matching "${escapeHtml(query)}"</div>`;
+    return;
+  }
+
+  contentEl.innerHTML = results.map((b, i) => renderBlockCard(b, i)).join('');
+
+  // Wire buttons
+  contentEl.querySelectorAll('[data-blk-copy]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const idx = parseInt(btn.getAttribute('data-ref-copy')!, 10);
-      navigator.clipboard.writeText(fetchedMacros[idx].code);
+      const idx = parseInt(btn.getAttribute('data-blk-copy')!, 10);
+      navigator.clipboard.writeText(results[idx].code);
       setStatus('Copied to clipboard');
     });
   });
-
-  listEl.querySelectorAll('[data-ref-insert]').forEach((btn) => {
+  contentEl.querySelectorAll('[data-blk-insert]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const idx = parseInt(btn.getAttribute('data-ref-insert')!, 10);
-      insertAtCursor(fetchedMacros[idx].code);
-      setStatus(`Inserted macro #${fetchedMacros[idx].index + 1}`);
+      const idx = parseInt(btn.getAttribute('data-blk-insert')!, 10);
+      insertAtCursor(results[idx].code);
+      setStatus(`Inserted "${results[idx].name}"`);
     });
   });
+
+  setupThumbnailObserver(results);
+}
+
+/** Open read-only CodeMirror viewer for a macro */
+async function openMacroViewer(code: string) {
+  const viewerEl = q('#d2ext-lib-viewer');
+  if (!viewerEl) return;
+
+  closeLibViewer();
+  viewerEl.style.display = '';
+
+  try {
+    libViewerView = await createEditor(viewerEl, code, { readOnly: true });
+  } catch (e) {
+    viewerEl.innerHTML = `<pre style="padding:8px;font-size:11px;overflow:auto">${escapeHtml(code)}</pre>`;
+  }
+}
+
+/** Close the read-only viewer */
+function closeLibViewer() {
+  libViewerView?.destroy();
+  libViewerView = null;
+  const viewerEl = q('#d2ext-lib-viewer');
+  if (viewerEl) {
+    viewerEl.style.display = 'none';
+    viewerEl.innerHTML = '';
+  }
+}
+
+/** Update autocomplete with all loaded reference blocks */
+function updateReferenceCompletions() {
+  const allBlocks: Array<{ name: string; code: string }> = [];
+  for (const [, data] of libraryMacroData) {
+    for (const macro of data.macros) {
+      for (const block of macro.blocks) {
+        allBlocks.push({ name: block.name, code: block.code });
+      }
+    }
+  }
+  setReferenceCompletions(allBlocks);
 }
 
 /** Insert text at cursor position in editor */
@@ -1022,45 +1453,12 @@ const MODAL_CSS = `
 
   /* Reference library panel */
   .d2ext-library-pane {
-    width: 320px;
-    min-width: 280px;
+    width: 340px;
+    min-width: 300px;
     display: flex;
     flex-direction: column;
     border-left: 1px solid #e0e0e0;
     background: #fafafa;
-  }
-
-  .d2ext-library-header {
-    display: flex;
-    gap: 6px;
-    padding: 8px;
-    border-bottom: 1px solid #e0e0e0;
-    flex-shrink: 0;
-  }
-
-  .d2ext-library-url {
-    flex: 1;
-    padding: 5px 8px;
-    border: 1px solid #d0d0d0;
-    border-radius: 4px;
-    font-size: 12px;
-    font-family: inherit;
-    outline: none;
-    min-width: 0;
-  }
-
-  .d2ext-library-url:focus {
-    border-color: #4a90d9;
-  }
-
-  .d2ext-library-page-title {
-    padding: 6px 8px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #333;
-    background: #e8f5e9;
-    border-bottom: 1px solid #c8e6c9;
-    flex-shrink: 0;
   }
 
   .d2ext-btn-sm {
@@ -1068,70 +1466,276 @@ const MODAL_CSS = `
     font-size: 11px;
   }
 
-  .d2ext-library-list {
+  /* Breadcrumb */
+  .d2ext-lib-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 11px;
+    color: #666;
+    flex-shrink: 0;
+    background: #f8f9fa;
+  }
+  .d2ext-lib-bc-link {
+    cursor: pointer;
+    color: #4a90d9;
+  }
+  .d2ext-lib-bc-link:hover {
+    text-decoration: underline;
+  }
+  .d2ext-lib-bc-sep {
+    color: #ccc;
+  }
+  .d2ext-lib-bc-current {
+    color: #333;
+    font-weight: 600;
+  }
+
+  /* Search */
+  .d2ext-lib-search-bar {
+    padding: 6px 8px;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+  }
+  .d2ext-lib-search {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .d2ext-lib-search:focus {
+    border-color: #4a90d9;
+  }
+
+  /* Content */
+  .d2ext-lib-content {
     flex: 1;
     overflow-y: auto;
     padding: 8px;
   }
 
-  .d2ext-library-empty,
-  .d2ext-library-loading {
+  .d2ext-lib-empty {
     text-align: center;
     color: #888;
     font-size: 12px;
     padding: 24px 12px;
     line-height: 1.6;
   }
-
-  .d2ext-library-loading {
+  .d2ext-lib-loading {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
+    color: #888;
+    font-size: 12px;
+    padding: 24px 12px;
   }
-
-  .d2ext-library-loading svg {
+  .d2ext-lib-loading svg {
     animation: d2ext-spin 1s linear infinite;
   }
 
-  .d2ext-ref-item {
+  /* Source cards */
+  .d2ext-lib-source-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.15s;
+  }
+  .d2ext-lib-source-card:hover {
+    border-color: #4a90d9;
+    background: #f8faff;
+  }
+  .d2ext-lib-source-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .d2ext-lib-source-space {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+  }
+  .d2ext-lib-source-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .d2ext-lib-source-actions {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  /* Add source form */
+  .d2ext-lib-add-btn-wrap {
+    padding: 4px 0;
+    text-align: center;
+  }
+  .d2ext-lib-source-form {
+    background: #f5f5f5;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    padding: 8px;
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .d2ext-lib-input {
+    padding: 5px 8px;
+    border: 1px solid #d0d0d0;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+  }
+  .d2ext-lib-input:focus {
+    border-color: #4a90d9;
+  }
+  .d2ext-lib-form-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+
+  /* Macro cards */
+  .d2ext-lib-macro-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.15s;
+  }
+  .d2ext-lib-macro-card:hover {
+    border-color: #4a90d9;
+    background: #f8faff;
+  }
+  .d2ext-lib-macro-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .d2ext-lib-macro-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+  }
+  .d2ext-lib-macro-actions {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+
+  /* Block cards */
+  .d2ext-lib-block-card {
     background: #fff;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
     padding: 8px;
-    margin-bottom: 8px;
-    cursor: default;
+    margin-bottom: 6px;
   }
-
-  .d2ext-ref-item:hover {
+  .d2ext-lib-block-card:hover {
     border-color: #4a90d9;
   }
-
-  .d2ext-ref-name {
+  .d2ext-lib-block-top {
+    display: flex;
+    gap: 8px;
+  }
+  .d2ext-lib-block-thumb {
+    width: 80px;
+    height: 60px;
+    flex-shrink: 0;
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .d2ext-lib-block-thumb svg {
+    max-width: 100%;
+    max-height: 100%;
+  }
+  .d2ext-lib-block-thumb-ph {
+    color: #ccc;
+    font-size: 10px;
+  }
+  .d2ext-lib-block-thumb-ph svg {
+    animation: d2ext-spin 1s linear infinite;
+  }
+  .d2ext-lib-block-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .d2ext-lib-block-name {
     font-weight: 600;
     font-size: 12px;
     color: #333;
     margin-bottom: 4px;
-  }
-
-  .d2ext-ref-code {
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-    font-size: 10px;
-    color: #666;
-    background: #f5f5f5;
-    padding: 4px 6px;
-    border-radius: 3px;
-    margin: 0 0 6px 0;
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-height: 60px;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
   }
-
-  .d2ext-ref-actions {
+  .d2ext-lib-block-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  .d2ext-lib-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    background: #e8eef5;
+    color: #4a6785;
+  }
+  .d2ext-lib-badge-cat {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  .d2ext-lib-block-actions {
     display: flex;
     gap: 4px;
     justify-content: flex-end;
+    margin-top: 6px;
+  }
+
+  /* Read-only viewer */
+  .d2ext-lib-viewer {
+    border-top: 1px solid #e0e0e0;
+    height: 200px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .d2ext-lib-viewer .cm-editor {
+    height: 100%;
   }
 
   /* Macro options panel */
