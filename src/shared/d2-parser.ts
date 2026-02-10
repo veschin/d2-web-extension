@@ -31,7 +31,8 @@ export function extractD2Blocks(source: string): D2Block[] {
     }
 
     // Check if this line starts a braced block: "name: { ..." or "name { ..." or "name.sub { ..."
-    const braceStart = trimmed.match(/^([a-zA-Z_][\w.-]*(?:\s*[^:{]*?)?)?\s*\{/);
+    // Also matches bare "{" and "name: label { ..."
+    const braceStart = trimmed.match(/^([a-zA-Z_][\w.-]*(?:\s*:?\s*[^{]*?)?)?\s*\{/);
     if (braceStart) {
       const startLine = i;
       let depth = 0;
