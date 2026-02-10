@@ -28,11 +28,10 @@ describe('view mode macro detection', () => {
     `;
     const codeDiv = document.querySelector('.d2-code');
     const raw = codeDiv?.textContent ?? '';
-    const code = raw
-      .replace(/&gt;/g, '>')
-      .replace(/&lt;/g, '<')
-      .replace(/&amp;/g, '&');
-    expect(code).toBe('a -> b -> c');
+    // decodeHtmlEntities uses textarea.innerHTML → .value
+    const el = document.createElement('textarea');
+    el.innerHTML = raw;
+    expect(el.value).toBe('a -> b -> c');
   });
 
   it('handles multiple macros', () => {

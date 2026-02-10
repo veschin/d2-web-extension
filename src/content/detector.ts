@@ -5,6 +5,13 @@ import { extractServerUrl } from '../shared/d2-server';
 import { logInfo, logWarn, logTimed } from '../shared/logger';
 import { setStatusBarText } from './status-bar';
 
+/** Decode HTML entities using the browser's built-in parser */
+function decodeHtmlEntities(s: string): string {
+  const el = document.createElement('textarea');
+  el.innerHTML = s;
+  return el.value;
+}
+
 /** Detected macros on the current page */
 let detectedMacros: MacroInfo[] = [];
 let pageMeta: PageMeta | null = null;
@@ -27,10 +34,7 @@ function detectViewModeMacros(): Array<{ element: Element; code: string; params:
     const codeDiv = el.querySelector('.d2-code');
     // Don't skip macros without code — include with empty string to keep index alignment with storage
     const code = codeDiv
-      ? (codeDiv.textContent ?? '')
-          .replace(/&gt;/g, '>')
-          .replace(/&lt;/g, '<')
-          .replace(/&amp;/g, '&')
+      ? decodeHtmlEntities(codeDiv.textContent ?? '')
       : '';
 
     const serverUrl = extractServerUrl(el);
@@ -71,10 +75,7 @@ function detectEditModeMacros(): Array<{ element: Element; code: string; params:
     const pre = table.querySelector('td.wysiwyg-macro-body pre');
     // Don't skip macros without code — include with empty string to keep index alignment with storage
     const code = pre
-      ? (pre.textContent ?? '')
-          .replace(/&gt;/g, '>')
-          .replace(/&lt;/g, '<')
-          .replace(/&amp;/g, '&')
+      ? decodeHtmlEntities(pre.textContent ?? '')
       : '';
 
     const paramsStr = table.getAttribute('data-macro-parameters') ?? '';
