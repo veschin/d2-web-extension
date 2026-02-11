@@ -1,0 +1,68 @@
+direction: right
+
+confluence: Confluence {
+  page: Page {
+    macro: D2 Macro {
+      style.font-size: 14
+    }
+    storage: Storage API
+  }
+}
+
+ext: Browser Extension {
+  cs: Content Script {
+    style.font-size: 13
+  }
+  editor: Editor Modal {
+    style.font-size: 13
+  }
+  sw: Service Worker {
+    style.font-size: 13
+  }
+  popup: Popup {
+    style.font-size: 13
+  }
+  standalone: Standalone Editor {
+    style.font-size: 13
+  }
+}
+
+server: D2 Server {
+  api: "/svg /png /format" {
+    style.font-size: 13
+  }
+  d2: d2 CLI {
+    style.font-size: 13
+  }
+  api -> d2: render
+}
+
+store: browser.storage {
+  style.font-size: 13
+}
+
+# Detection
+ext.cs -> confluence.page.macro: detect macros {
+  style.stroke-dash: 3
+}
+
+# Editor interactions
+ext.cs -> ext.editor: open
+ext.editor -> ext.sw: proxy-fetch
+ext.sw -> server.api: POST /svg {style.font-color: "#4A6FF3"}
+ext.sw -> confluence.page.storage: REST API {style.font-color: "#4A6FF3"}
+
+# Standalone
+ext.popup -> ext.standalone: "+ New"
+
+# Preview & save
+ext.editor -> store: drafts
+ext.standalone -> store: drafts
+ext.standalone -> ext.sw: proxy-fetch
+ext.popup -> store: settings
+
+# Macro rendering (without extension)
+confluence.page.macro -> server.api: fetch diagram {
+  style.stroke-dash: 3
+  style.stroke: "#999"
+}
