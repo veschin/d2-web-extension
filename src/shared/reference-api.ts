@@ -76,7 +76,7 @@ export async function fetchReferences(
     // Search for the reference page by title in the space
     const searchUrl = `/rest/api/content?spaceKey=${encodeURIComponent(source.spaceKey)}&title=${encodeURIComponent(source.pageTitle)}&expand=body.storage,version`;
 
-    const res = await fetch(searchUrl, { credentials: 'same-origin' });
+    const res = await fetch(searchUrl, { credentials: 'include' });
     if (!res.ok) {
       logError('api', `Failed to fetch reference page: HTTP ${res.status}`);
       return [];
@@ -160,7 +160,7 @@ export async function fetchReferenceMacros(
   return logTimed('api', `Fetch reference macros for space ${spaceKey}`, async () => {
     const searchUrl = `/rest/api/content?spaceKey=${encodeURIComponent(source.spaceKey)}&title=${encodeURIComponent(source.pageTitle)}&expand=body.storage,version`;
 
-    const res = await fetch(searchUrl, { credentials: 'same-origin' });
+    const res = await fetch(searchUrl, { credentials: 'include' });
     if (!res.ok) {
       logError('api', `Failed to fetch reference page: HTTP ${res.status}`);
       return { macros: [], pageTitle: source.pageTitle };

@@ -3,6 +3,7 @@ import { cpSync, mkdirSync } from 'fs';
 
 const target = process.env.BUILD_TARGET || 'chrome';
 const watch = process.env.WATCH === '1';
+const production = process.env.PRODUCTION === '1';
 const outdir = `dist-${target}`;
 
 // Polyfill: Chrome MV3 has `chrome.*`, Firefox MV3 has `browser.*`.
@@ -13,8 +14,8 @@ const shared = {
   bundle: true,
   platform: 'browser',
   target: 'es2020',
-  sourcemap: true,
-  minify: !watch,
+  sourcemap: !production,
+  minify: production || !watch,
   define: {
     'process.env.BUILD_TARGET': JSON.stringify(target),
   },
@@ -61,7 +62,7 @@ async function build() {
   // Copy static assets
   mkdirSync(`${outdir}/assets`, { recursive: true });
 
-  cpSync('manifest.json', `${outdir}/manifest.json`);
+  cpSync(`manifest.${target}.json`, `${outdir}/manifest.json`);
   cpSync('src/popup/popup.html', `${outdir}/popup.html`);
   cpSync('src/popup/popup.css', `${outdir}/popup.css`);
   cpSync('src/content/content.css', `${outdir}/content.css`);
@@ -73,6 +74,10 @@ async function build() {
 
   try {
     cpSync('assets/icons', `${outdir}/assets/icons`, { recursive: true });
+  } catch {}
+
+  try {
+    cpSync('assets/Agave-Regular-slashed.ttf', `${outdir}/assets/Agave-Regular-slashed.ttf`);
   } catch {}
 
   try {

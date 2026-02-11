@@ -46,8 +46,10 @@ export async function createEditor(
     ? [d2Linter({ getServerUrl: callbacks.getServerUrl }), lintGutter()]
     : [];
 
-  // Firefox content scripts can't access adoptedStyleSheets through Xray wrappers.
-  // Hide it on our shadow root so style-mod (CodeMirror dep) falls back to <style> tags.
+  // Disable adoptedStyleSheets on shadow roots so style-mod (CodeMirror dep) falls
+  // back to <style> tags. Needed for both browsers in content script context:
+  // - Firefox: Xray wrappers break adoptedStyleSheets access
+  // - Chrome: Confluence CSP blocks blob: stylesheet URLs that adoptedStyleSheets creates
   const root = container.getRootNode() as ShadowRoot | Document;
   if (root !== document) {
     Object.defineProperty(root, 'adoptedStyleSheets', {
@@ -119,7 +121,7 @@ export async function createEditor(
           '&': { height: '100%' },
           '.cm-scroller': { overflow: 'auto' },
           '.cm-content': {
-            fontFamily: "'SF Mono', Monaco, 'Cascadia Code', 'Fira Code', monospace",
+            fontFamily: "'Agave', monospace",
           },
         }),
         fontSizeCompartment.of(EditorView.theme({

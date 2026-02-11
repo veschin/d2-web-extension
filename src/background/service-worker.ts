@@ -2,6 +2,11 @@ import type { MacroInfo, PageMeta } from '../shared/types';
 import { logInfo, logWarn, logError, logTimed } from '../shared/logger';
 import { fetchReferences, fetchReferenceMacros, getReferenceSources, setReferenceSources } from '../shared/reference-api';
 
+// Chrome MV3: allow content scripts to access storage.session (no-op on Firefox)
+if (typeof chrome !== 'undefined' && chrome.storage?.session?.setAccessLevel) {
+  chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' });
+}
+
 const STATE_KEY = 'd2ext-sw-state';
 
 interface SWState {
@@ -90,7 +95,7 @@ browser.runtime.onMessage.addListener((message, sender) => {
       return logTimed('api', `Confluence API ${method}`, () =>
         fetch(url, {
           method,
-          credentials: 'same-origin',
+          credentials: 'include',
           headers: body ? { 'Content-Type': 'application/json' } : undefined,
           body: body ?? undefined,
         }).then(async (res) => {
