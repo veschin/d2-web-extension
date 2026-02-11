@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { readPageMeta, parseStorageMacros, replaceStorageMacroCode } from './confluence-api';
+import { readPageMeta, parseStorageMacros, replaceStorageMacroCode, replaceStorageMacroParams } from './confluence-api';
 
 // Real storage format captured from Confluence 7.19 instance
 const REAL_STORAGE = `<h2 class="auto-cursor-target">Заголовок</h2><ac:structured-macro ac:name="d2" ac:schema-version="1" ac:macro-id="bab2a33c-c164-4ca5-a57c-dff8bce77d12"><ac:parameter ac:name="atlassian-macro-output-type">INLINE</ac:parameter><ac:plain-text-body><![CDATA[j_a -> j_b -> py_d]]></ac:plain-text-body></ac:structured-macro><p class="auto-cursor-target"><br /></p><h2 class="auto-cursor-target">Заголовок 2</h2><ac:structured-macro ac:name="d2" ac:schema-version="1" ac:macro-id="c1b80840-c628-45e2-b3c2-30f293495292"><ac:parameter ac:name="atlassian-macro-output-type">INLINE</ac:parameter><ac:plain-text-body><![CDATA[a -> c]]></ac:plain-text-body></ac:structured-macro><p class="auto-cursor-target"><br /></p><h2 class="auto-cursor-target">Заголовок 3</h2><ac:structured-macro ac:name="d2" ac:schema-version="1" ac:macro-id="b606ae98-2d63-415a-9fac-77bb5fa6ea8c"><ac:parameter ac:name="atlassian-macro-output-type">INLINE</ac:parameter><ac:plain-text-body><![CDATA[a -> c]]></ac:plain-text-body></ac:structured-macro>`;
@@ -134,6 +134,71 @@ describe('replaceStorageMacroCode', () => {
     expect(updated).toContain('<h2 class="auto-cursor-target">Заголовок</h2>');
     expect(updated).toContain('<h2 class="auto-cursor-target">Заголовок 2</h2>');
     expect(updated).toContain('<h2 class="auto-cursor-target">Заголовок 3</h2>');
+  });
+});
+
+describe('replaceStorageMacroParams', () => {
+  const STORAGE_WITH_PARAMS = `<ac:structured-macro ac:name="d2" ac:schema-version="1" ac:macro-id="p-macro-1"><ac:parameter ac:name="server">https://d2.old</ac:parameter><ac:parameter ac:name="theme">0</ac:parameter><ac:plain-text-body><![CDATA[a -> b]]></ac:plain-text-body></ac:structured-macro>`;
+
+  it('replaces existing parameters', () => {
+    const updated = replaceStorageMacroParams(STORAGE_WITH_PARAMS, 'p-macro-1', {
+      server: 'https://d2.new',
+      theme: '3',
+    });
+    expect(updated).toContain('ac:name="server">https://d2.new</ac:parameter>');
+    expect(updated).toContain('ac:name="theme">3</ac:parameter>');
+    // Old params removed
+    expect(updated).not.toContain('https://d2.old');
+  });
+
+  it('skips empty param values', () => {
+    const updated = replaceStorageMacroParams(STORAGE_WITH_PARAMS, 'p-macro-1', {
+      server: 'https://d2.new',
+      theme: '',
+    });
+    expect(updated).toContain('ac:name="server">https://d2.new</ac:parameter>');
+    expect(updated).not.toContain('ac:name="theme"');
+  });
+
+  it('XML-escapes parameter values', () => {
+    const updated = replaceStorageMacroParams(STORAGE_WITH_PARAMS, 'p-macro-1', {
+      label: 'Test & <script>"evil"</script>',
+    });
+    expect(updated).toContain('Test &amp; &lt;script&gt;&quot;evil&quot;&lt;/script&gt;');
+  });
+
+  it('preserves CDATA body when replacing params', () => {
+    const updated = replaceStorageMacroParams(STORAGE_WITH_PARAMS, 'p-macro-1', {
+      server: 'https://d2.new',
+    });
+    expect(updated).toContain('<![CDATA[a -> b]]>');
+  });
+
+  it('returns unchanged storage for non-existent macro-id', () => {
+    const updated = replaceStorageMacroParams(STORAGE_WITH_PARAMS, 'no-such-id', {
+      server: 'x',
+    });
+    expect(updated).toBe(STORAGE_WITH_PARAMS);
+  });
+
+  it('handles macro with no existing parameters', () => {
+    const storageNoParams = `<ac:structured-macro ac:name="d2" ac:schema-version="1" ac:macro-id="no-params"><ac:plain-text-body><![CDATA[x -> y]]></ac:plain-text-body></ac:structured-macro>`;
+    const updated = replaceStorageMacroParams(storageNoParams, 'no-params', {
+      theme: '3',
+      layout: 'dagre',
+    });
+    expect(updated).toContain('ac:name="theme">3</ac:parameter>');
+    expect(updated).toContain('ac:name="layout">dagre</ac:parameter>');
+    expect(updated).toContain('<![CDATA[x -> y]]>');
+  });
+
+  it('removes all parameters when all values are empty', () => {
+    const updated = replaceStorageMacroParams(STORAGE_WITH_PARAMS, 'p-macro-1', {
+      server: '',
+      theme: '',
+    });
+    expect(updated).not.toContain('<ac:parameter');
+    expect(updated).toContain('<![CDATA[a -> b]]>');
   });
 });
 

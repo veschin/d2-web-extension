@@ -193,3 +193,8 @@ export function extractServerUrl(macroElement: Element): string {
   }
   return '';
 }
+
+/** Reset reachability cache (for testing). */
+export function _resetReachabilityCache() {
+  reachabilityCache.clear();
+}

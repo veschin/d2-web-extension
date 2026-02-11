@@ -60,7 +60,7 @@ export function d2Linter(config: LinterConfig) {
  * Parse D2 server error output into CodeMirror diagnostics.
  * D2 error format: `<stdin>:LINE:COL: message` or just a plain message.
  */
-function parseD2Errors(
+export function parseD2Errors(
   errorText: string,
   doc: { line(n: number): { from: number; to: number }; lines: number }
 ): Diagnostic[] {

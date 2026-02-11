@@ -4,6 +4,7 @@ import {
   logWarn,
   logError,
   logTimed,
+  getEntries,
   getEntriesSync,
   clearLog,
   _resetForTesting,
@@ -142,5 +143,42 @@ describe('logger', () => {
     expect(getEntriesSync()).toHaveLength(1);
     _resetForTesting();
     expect(getEntriesSync()).toHaveLength(0);
+  });
+
+  it('getEntries merges in-memory with storage entries', async () => {
+    const storedEntries = [
+      { ts: 1000, level: 'info', source: 'system', message: 'from storage' },
+    ];
+    vi.spyOn(browser.storage.session, 'get').mockImplementation(async () => ({
+      'd2ext-log': storedEntries,
+    }));
+
+    logInfo('detector', 'from memory');
+
+    const all = await getEntries();
+    expect(all.length).toBe(2);
+    // Should be sorted by ts — stored first (ts=1000), then memory (ts=Date.now())
+    expect(all[0].message).toBe('from storage');
+    expect(all[1].message).toBe('from memory');
+  });
+
+  it('getEntries deduplicates entries with same ts/source/message', async () => {
+    const entry = { ts: 5000, level: 'info', source: 'system', message: 'dup' };
+    vi.spyOn(browser.storage.session, 'get').mockImplementation(async () => ({
+      'd2ext-log': [entry, entry], // duplicate in storage
+    }));
+
+    const all = await getEntries();
+    const dups = all.filter((e) => e.message === 'dup');
+    expect(dups).toHaveLength(1); // deduplicated
+  });
+
+  it('getEntries returns in-memory entries when storage unavailable', async () => {
+    vi.spyOn(browser.storage.session, 'get').mockImplementation(async () => { throw new Error('no storage'); });
+
+    logInfo('system', 'fallback');
+    const all = await getEntries();
+    expect(all).toHaveLength(1);
+    expect(all[0].message).toBe('fallback');
   });
 });
