@@ -12,6 +12,8 @@ import type { Parser } from 'web-tree-sitter';
 import { logInfo, logWarn, logError, logTimed } from '../shared/logger';
 import { loadEditorPrefs, saveEditorPrefs, saveDraft, loadDraft, clearDraft } from '../shared/editor-prefs';
 
+const REF_SOURCES_KEY = 'd2ext-ref-sources';
+
 let hostEl: HTMLElement | null = null;
 let shadow: ShadowRoot | null = null;
 let editorView: EditorView | null = null;
@@ -479,10 +481,10 @@ async function initLibrary() {
   // Cache parser for metadata analysis
   try { d2Parser = await initD2Parser(); } catch { /* fallback to regex */ }
 
-  // Load configured sources
+  // Load configured sources directly from storage (bypasses SW cold-start)
   try {
-    const resp = await browser.runtime.sendMessage({ type: 'get-reference-sources' });
-    librarySources = resp?.sources ?? [];
+    const result = await browser.storage.local.get(REF_SOURCES_KEY);
+    librarySources = (result[REF_SOURCES_KEY] as ReferenceSource[]) ?? [];
   } catch { librarySources = []; }
 
   // Wire search with debounce
@@ -671,7 +673,7 @@ function showAddSourceForm() {
 async function addReferenceSource(spaceKey: string, pageTitle: string) {
   librarySources.push({ spaceKey, pageTitle });
   try {
-    await browser.runtime.sendMessage({ type: 'set-reference-sources', sources: librarySources });
+    await browser.storage.local.set({ [REF_SOURCES_KEY]: librarySources });
   } catch {}
   renderLibrarySources();
   logInfo('editor', `Added reference source: ${spaceKey}/${pageTitle}`);
@@ -681,7 +683,7 @@ async function addReferenceSource(spaceKey: string, pageTitle: string) {
 async function removeReferenceSource(index: number) {
   const removed = librarySources.splice(index, 1)[0];
   try {
-    await browser.runtime.sendMessage({ type: 'set-reference-sources', sources: librarySources });
+    await browser.storage.local.set({ [REF_SOURCES_KEY]: librarySources });
   } catch {}
   if (removed) libraryMacroData.delete(removed.spaceKey);
   renderLibrarySources();
@@ -739,7 +741,7 @@ async function fetchByUrl(url: string) {
     if (!librarySources.some((s) => s.spaceKey === sourceKey)) {
       librarySources.push({ spaceKey: sourceKey, pageTitle });
       try {
-        await browser.runtime.sendMessage({ type: 'set-reference-sources', sources: librarySources });
+        await browser.storage.local.set({ [REF_SOURCES_KEY]: librarySources });
       } catch {}
     }
 

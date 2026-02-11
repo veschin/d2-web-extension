@@ -3,6 +3,7 @@ import { loadEditorPrefs, saveEditorPrefs, listStandaloneDrafts, deleteStandalon
 import { loadSettings, saveSettings } from '../shared/extension-settings';
 import { getEntries, clearLog, type LogEntry } from '../shared/logger';
 import { logInfo, logWarn } from '../shared/logger';
+import { getStorageInfo, clearAllData, testStorageAccess } from '../shared/storage-info';
 
 let userServerUrl = '';
 
@@ -210,6 +211,61 @@ async function initSettings() {
     await saveEditorPrefs({ fontSize: Math.max(8, Math.min(28, fontSize)) });
     showInlineStatus('editor-status', 'Saved!');
   });
+
+  // Storage info
+  refreshStorageInfo();
+
+  document.getElementById('clear-cache')?.addEventListener('click', async () => {
+    await clearAllData(true);
+    refreshStorageInfo();
+  });
+
+  document.getElementById('clear-all-data')?.addEventListener('click', async () => {
+    if (confirm('Delete all extension data? Settings will be preserved.')) {
+      await clearAllData(true);
+      refreshStorageInfo();
+      loadDraftsList();
+    }
+  });
+}
+
+async function refreshStorageInfo() {
+  const container = document.getElementById('storage-info');
+  if (!container) return;
+
+  try {
+    // First test if storage works at all
+    const test = await testStorageAccess();
+    if (!test.ok) {
+      container.innerHTML = `<div style="color:#c62828">storage.local broken: ${escapeHtml(test.error ?? 'write-read mismatch')}</div>`;
+      return;
+    }
+
+    const info = await getStorageInfo();
+    const versionNote = info.storedVersion && info.storedVersion !== info.version
+      ? ` (data from v${info.storedVersion})`
+      : '';
+
+    container.innerHTML = `
+      <div class="storage-grid">
+        <span class="storage-label">Reference sources</span>
+        <span class="storage-value">${info.referenceSources}</span>
+        <span class="storage-label">Reference cache</span>
+        <span class="storage-value">${info.referenceCache.spaces} spaces, ${info.referenceCache.totalBlocks} blocks</span>
+        <span class="storage-label">Macro drafts</span>
+        <span class="storage-value">${info.macroDrafts}</span>
+        <span class="storage-label">Standalone drafts</span>
+        <span class="storage-value">${info.standaloneDrafts}</span>
+        <span class="storage-label">SVG cache</span>
+        <span class="storage-value">${info.svgCacheEntries} entries</span>
+        <span class="storage-label">Server URL</span>
+        <span class="storage-value">${info.settings?.serverUrl ? escapeHtml(info.settings.serverUrl) : '(not set)'}</span>
+      </div>
+      <div class="storage-version">v${info.version}${versionNote}</div>
+    `;
+  } catch (e) {
+    container.textContent = `Storage error: ${(e as Error).message}`;
+  }
 }
 
 function showInlineStatus(id: string, text: string) {
@@ -310,16 +366,35 @@ function renderDebugEntry(entry: LogEntry): string {
   `;
 }
 
+// --- Read macros directly from storage (bypasses SW cold-start issue in Chrome) ---
+const SW_STATE_KEY = 'd2ext-sw-state';
+
+async function loadMacrosFromStorage() {
+  try {
+    const [tabs, stateResult] = await Promise.all([
+      browser.tabs.query({ active: true, currentWindow: true }),
+      browser.storage.session.get(SW_STATE_KEY),
+    ]);
+    const tabId = tabs[0]?.id;
+    if (!tabId) return null;
+    const state = (stateResult[SW_STATE_KEY] as { tabs: Record<number, { macros: MacroInfo[]; pageMeta: PageMeta | null }> }) ?? { tabs: {} };
+    const tabData = state.tabs[tabId];
+    if (!tabData) return null;
+    return { macros: tabData.macros ?? [], pageMeta: tabData.pageMeta ?? null };
+  } catch {
+    return null;
+  }
+}
+
 // --- Init: load settings then macros + drafts ---
 loadSettings().then((settings) => {
   userServerUrl = settings.serverUrl;
 }).finally(() => {
-  browser.runtime.sendMessage({ type: 'get-macros' }).then((response) => {
-    if (response) {
-      logInfo('system', `Popup: retrieved ${response.macros?.length ?? 0} macros`);
-      renderMacros(response.macros, response.pageMeta);
+  loadMacrosFromStorage().then((result) => {
+    if (result && result.macros.length > 0) {
+      logInfo('system', `Popup: retrieved ${result.macros.length} macros from storage`);
+      renderMacros(result.macros, result.pageMeta);
     } else {
-      logWarn('system', 'Popup: no response from service worker');
       statusEl.className = 'status empty';
       statusEl.textContent = 'Navigate to a Confluence page first';
     }

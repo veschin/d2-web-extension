@@ -15,8 +15,8 @@ export async function loadSettings(): Promise<ExtensionSettings> {
     if (stored && typeof stored === 'object') {
       return { ...DEFAULTS, ...stored };
     }
-  } catch {
-    // storage unavailable
+  } catch (e) {
+    console.error('[d2ext] loadSettings failed:', e);
   }
   return { ...DEFAULTS };
 }
@@ -24,7 +24,7 @@ export async function loadSettings(): Promise<ExtensionSettings> {
 export async function saveSettings(settings: ExtensionSettings): Promise<void> {
   try {
     await browser.storage.local.set({ [STORAGE_KEY]: settings });
-  } catch {
-    // storage unavailable
+  } catch (e) {
+    console.error('[d2ext] saveSettings failed:', e);
   }
 }

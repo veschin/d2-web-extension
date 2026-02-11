@@ -1,11 +1,15 @@
 import type { MacroInfo, PageMeta } from '../shared/types';
 import { logInfo, logWarn, logError, logTimed } from '../shared/logger';
 import { fetchReferences, fetchReferenceMacros, getReferenceSources, setReferenceSources } from '../shared/reference-api';
+import { stampVersion } from '../shared/storage-info';
 
 // Chrome MV3: allow content scripts to access storage.session (no-op on Firefox)
 if (typeof chrome !== 'undefined' && chrome.storage?.session?.setAccessLevel) {
   chrome.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' });
 }
+
+// Stamp extension version in storage on every SW startup
+stampVersion();
 
 const STATE_KEY = 'd2ext-sw-state';
 
