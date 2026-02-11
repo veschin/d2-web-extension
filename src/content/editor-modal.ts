@@ -103,8 +103,11 @@ export async function openEditor(macro: MacroInfo, pageMeta: PageMeta) {
   shadow = hostEl.attachShadow({ mode: 'open' });
 
   // Inject styles into shadow root
+  const fontUrl = browser.runtime?.getURL?.('assets/Agave-Regular-slashed.ttf') ?? '';
   const style = document.createElement('style');
-  style.textContent = MODAL_CSS;
+  style.textContent = (fontUrl
+    ? `@font-face { font-family: 'Agave'; src: url('${fontUrl}') format('truetype'); font-weight: normal; font-style: normal; font-display: swap; }\n`
+    : '') + MODAL_CSS;
   shadow.appendChild(style);
 
   // Create modal DOM inside shadow root
@@ -1711,7 +1714,7 @@ const MODAL_CSS = `
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(2px);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Agave', monospace;
     font-size: 14px;
     line-height: 1.5;
     color: #333;
@@ -1900,7 +1903,6 @@ const MODAL_CSS = `
     border-top: 1px solid #ffcdd2;
     color: #c62828;
     font-size: 12px;
-    font-family: monospace;
     white-space: pre-wrap;
     max-height: 120px;
     overflow: auto;
