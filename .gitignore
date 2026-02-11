@@ -15,6 +15,7 @@ dist-firefox/
 # Packaged extensions
 d2_diagram_editor_for_confluence-*.zip
 d2ext-chrome.zip
+d2ext-sources.zip
 *.xpi
 
 # Confluence page examples (contain real instance data)
