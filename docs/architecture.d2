@@ -1,50 +1,26 @@
-direction: down
+sequence: {
+  shape: sequence_diagram
 
-confluence: Confluence {
-  page: Page {
-    macro: D2 Macro
-    storage: Storage API
-  }
-}
+  ext: Browser Extension
+  confluence: Confluence
+  d2server: D2 Server
 
-ext: Browser Extension {
-  cs: Content Script
-  editor: Editor Modal
-  sw: Service Worker
-  popup: Popup
-  standalone: Standalone Editor
-}
+  # Page load
+  ext -> confluence: detect D2 macros
+  confluence -> ext: macro code + params
 
-server: D2 Server {
-  api: "/svg /png /format"
-  d2: d2 CLI
-  api -> d2: render
-}
+  # Edit
+  ext -> d2server: POST /svg (live preview)
+  d2server -> ext: SVG
 
-store: browser.storage
+  # Save (view mode)
+  ext -> confluence: PUT storage (REST API)
+  confluence -> ext: 200 OK
 
-# Detection
-ext.cs -> confluence.page.macro: detect macros {
-  style.stroke-dash: 3
-}
+  # Save (edit mode)
+  ext -> ext: update TinyMCE DOM
 
-# Editor interactions
-ext.cs -> ext.editor: open
-ext.editor -> ext.sw: proxy-fetch
-ext.sw -> server.api: POST /svg {style.font-color: "#4A6FF3"}
-ext.sw -> confluence.page.storage: REST API {style.font-color: "#4A6FF3"}
-
-# Standalone
-ext.popup -> ext.standalone: "+ New"
-
-# Preview & save
-ext.editor -> store: drafts
-ext.standalone -> store: drafts
-ext.standalone -> ext.sw: proxy-fetch
-ext.popup -> store: settings
-
-# Macro rendering (without extension)
-confluence.page.macro -> server.api: fetch diagram {
-  style.stroke-dash: 3
-  style.stroke: "#999"
+  # Without extension
+  confluence -> d2server: fetch diagram
+  d2server -> confluence: SVG / PNG
 }
