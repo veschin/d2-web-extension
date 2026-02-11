@@ -4,9 +4,26 @@ Browser extension that lets you edit [D2](https://d2lang.com/) diagrams directly
 
 Works with Chrome and Firefox.
 
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Install from stores](#install-from-stores)
+- [Local development](#local-development)
+  - [Requirements](#requirements)
+  - [Setup](#setup)
+  - [Build](#build)
+  - [Load into browser](#load-into-browser)
+  - [Dev mode (watch)](#dev-mode-watch)
+  - [Test](#test)
+- [Project structure](#project-structure)
+- [Configuration](#configuration)
+- [License](#license)
+
 ## Architecture
 
-![Architecture](docs/architecture.svg)
+![Architecture](docs/architecture.png)
 
 This extension is part of a two-component system:
 
@@ -80,14 +97,39 @@ make sources    # create source archive (for AMO submission)
 make clean      # remove build artifacts
 ```
 
+### Load into browser
+
+#### Firefox
+
+```bash
+make dev
+```
+
+This builds the extension, launches Firefox, and opens `about:debugging`. The extension reloads automatically on code changes.
+
+To load manually: open `about:debugging#/runtime/this-firefox` → "Load Temporary Add-on" → select any file in `dist-firefox/`.
+
+#### Chrome
+
+```bash
+npm run dev:chrome
+```
+
+Then load the extension manually:
+
+1. Open `chrome://extensions`
+2. Enable "Developer mode" (toggle in top right)
+3. Click "Load unpacked"
+4. Select the `dist-chrome/` directory
+
+The extension rebuilds on code changes, but you need to click the refresh icon on the extension card in `chrome://extensions` to reload.
+
 ### Dev mode (watch)
 
 ```bash
-make dev        # Firefox: rebuilds on change + launches browser via web-ext
-npm run dev:chrome  # Chrome: rebuilds on change
+make dev            # Firefox: rebuild + auto-reload
+npm run dev:chrome  # Chrome: rebuild only (manual reload needed)
 ```
-
-For Chrome dev mode, load the unpacked extension from `dist-chrome/` in `chrome://extensions` (enable Developer mode).
 
 ### Test
 

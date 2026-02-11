@@ -1,45 +1,27 @@
-direction: right
+direction: down
 
 confluence: Confluence {
   page: Page {
-    macro: D2 Macro {
-      style.font-size: 14
-    }
+    macro: D2 Macro
     storage: Storage API
   }
 }
 
 ext: Browser Extension {
-  cs: Content Script {
-    style.font-size: 13
-  }
-  editor: Editor Modal {
-    style.font-size: 13
-  }
-  sw: Service Worker {
-    style.font-size: 13
-  }
-  popup: Popup {
-    style.font-size: 13
-  }
-  standalone: Standalone Editor {
-    style.font-size: 13
-  }
+  cs: Content Script
+  editor: Editor Modal
+  sw: Service Worker
+  popup: Popup
+  standalone: Standalone Editor
 }
 
 server: D2 Server {
-  api: "/svg /png /format" {
-    style.font-size: 13
-  }
-  d2: d2 CLI {
-    style.font-size: 13
-  }
+  api: "/svg /png /format"
+  d2: d2 CLI
   api -> d2: render
 }
 
-store: browser.storage {
-  style.font-size: 13
-}
+store: browser.storage
 
 # Detection
 ext.cs -> confluence.page.macro: detect macros {
