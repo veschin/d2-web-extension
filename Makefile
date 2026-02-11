@@ -1,27 +1,13 @@
-.PHONY: build firefox chrome clean dev lint package debug-chrome debug-firefox
-
-build: firefox
+.PHONY: firefox chrome dev clean
 
 firefox:
-	npm run build:firefox
+	npm run build:firefox && npm run lint:firefox && npm run package:firefox
 
 chrome:
-	npm run build:chrome
+	PRODUCTION=1 BUILD_TARGET=chrome node esbuild.config.mjs && cd dist-chrome && zip -r ../d2ext-chrome.zip .
 
 dev:
 	npm run dev:firefox
 
-lint:
-	npm run build:firefox && npm run lint:firefox
-
-package:
-	npm run package:firefox
-
 clean:
 	npm run clean
-
-debug-chrome:
-	open 'chrome://extensions/'
-
-debug-firefox:
-	open 'about:debugging#/runtime/this-firefox'

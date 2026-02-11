@@ -12,5 +12,10 @@ dist-firefox/
 *.swo
 *~
 
+# Packaged extensions
+d2_diagram_editor_for_confluence-*.zip
+d2ext-chrome.zip
+*.xpi
+
 # Confluence page examples (contain real instance data)
 conf-*.html
