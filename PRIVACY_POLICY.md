@@ -15,7 +15,7 @@ User preferences (font size, editor settings, drafts) are stored locally in your
 The extension makes network requests only to:
 
 1. **Your Confluence instance** — to read and save diagram content via the Confluence REST API. These requests go directly to the Confluence server you are currently visiting.
-2. **Your configured D2 server** — to render D2 diagrams into SVG. By default this is `https://play.d2lang.com`; you can configure a self-hosted server in the extension options.
+2. **Your configured D2 server** — to render D2 diagrams into SVG. No default server is preconfigured; the extension uses the server URL embedded in the D2 macro on the page, or a custom server you configure in the extension settings.
 
 No data is sent to any other third-party service.
 
