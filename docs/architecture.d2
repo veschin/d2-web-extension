@@ -1,26 +1,32 @@
 sequence: {
   shape: sequence_diagram
 
-  ext: Browser Extension
-  confluence: Confluence
-  d2server: D2 Server
+  mf_extension: "Browser\nExtension"
+  ex_confluence: Confluence
+  j_d2_server: "D2\nServer"
 
-  # Page load
-  ext -> confluence: detect D2 macros
-  confluence -> ext: macro code + params
+  # Page load (once)
+  mf_extension -> ex_confluence: detect macros
+  ex_confluence -> mf_extension: code + params
 
-  # Edit
-  ext -> d2server: POST /svg (live preview)
-  d2server -> ext: SVG
+  # Edit loop
+  edit: {
+    label: "loop [editing]"
+    mf_extension -> j_d2_server: "POST /svg"
+    j_d2_server -> mf_extension: SVG
+  }
 
   # Save (view mode)
-  ext -> confluence: PUT storage (REST API)
-  confluence -> ext: 200 OK
+  mf_extension -> ex_confluence: "PUT storage"
+  ex_confluence -> mf_extension: 200
 
   # Save (edit mode)
-  ext -> ext: update TinyMCE DOM
+  mf_extension -> mf_extension: "update\nTinyMCE DOM"
 
-  # Without extension
-  confluence -> d2server: fetch diagram
-  d2server -> confluence: SVG / PNG
+  # Macro render (without extension)
+  render: {
+    label: "loop [page view]"
+    ex_confluence -> j_d2_server: "fetch diagram"
+    j_d2_server -> ex_confluence: "SVG / PNG"
+  }
 }
